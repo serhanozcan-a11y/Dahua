@@ -8,6 +8,9 @@ lockout koruması nedeniyle bu sürücü asla kendi kendine parola retry yapmaz.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+from urllib.parse import quote
+
 import httpx
 
 from .. import parsing
@@ -149,6 +152,67 @@ class CgiDriver:
                 )
             )
         return raids
+
+    # --- En eski kayıt tarihi (saklama derinliği) -------------------------
+    #
+    # mediaFileFind.cgi akışı: factory.create -> findFile (2000'den bugüne,
+    # kanal bazında) -> findNextFile&count=1 (sonuçlar zaman sıralı geldiği
+    # için ilk dosya en eskisidir) -> close + destroy. Kanal numaralandırması
+    # firmware'e göre 0 veya 1 tabanlı olabilir; Faz 0 saha testinde
+    # doğrulanacak (config: first_channel).
+
+    _TS_FMT = "%Y-%m-%d %H:%M:%S"
+
+    async def get_oldest_recording(self, channels: list[int]) -> datetime | None:
+        oldest: datetime | None = None
+        for ch in channels:
+            ts = await self._oldest_on_channel(ch)
+            if ts is not None and (oldest is None or ts < oldest):
+                oldest = ts
+        return oldest
+
+    async def _oldest_on_channel(self, channel: int) -> datetime | None:
+        text = await self._get("/cgi-bin/mediaFileFind.cgi?action=factory.create")
+        token = parsing.parse_flat(text).get("result")
+        if not token:
+            raise DriverError("mediaFileFind: finder oluşturulamadı")
+        try:
+            end = (datetime.now() + timedelta(days=1)).strftime(self._TS_FMT)
+            cond = (
+                f"action=findFile&object={token}"
+                f"&condition.Channel={channel}"
+                f"&condition.StartTime={quote('2000-01-01 00:00:00')}"
+                f"&condition.EndTime={quote(end)}"
+            )
+            try:
+                found_resp = await self._get(f"/cgi-bin/mediaFileFind.cgi?{cond}")
+            except DriverError:
+                return None  # bu kanalda kayıt yok (firmware Error/400 döner)
+            if "OK" not in found_resp:
+                return None
+            text = await self._get(
+                f"/cgi-bin/mediaFileFind.cgi?action=findNextFile"
+                f"&object={token}&count=1"
+            )
+            tree = parsing.parse_kv_tree(text)
+            items = tree.get("items", [])
+            if isinstance(items, dict):
+                items = [items]
+            for item in items:
+                raw = str(item.get("StartTime", ""))
+                try:
+                    return datetime.strptime(raw, self._TS_FMT)
+                except ValueError:
+                    continue
+            return None
+        finally:
+            for action in ("close", "destroy"):
+                try:
+                    await self._get(
+                        f"/cgi-bin/mediaFileFind.cgi?action={action}&object={token}"
+                    )
+                except DriverError:
+                    pass  # finder temizliği best-effort
 
     async def close(self) -> None:
         await self._client.aclose()

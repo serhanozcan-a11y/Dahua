@@ -43,6 +43,15 @@ CREATE TABLE IF NOT EXISTS raid_metrics (
     raw         JSONB
 );
 
+-- Günlük saklama derinliği: cihazdaki en eski kaydın tarihi.
+-- oldest_recording cihazın KENDİ saatiyle döner (tz bilgisi yok).
+CREATE TABLE IF NOT EXISTS retention_metrics (
+    ts               TIMESTAMPTZ NOT NULL,
+    nvr_id           INT NOT NULL REFERENCES nvr(id),
+    oldest_recording TIMESTAMP,
+    retention_days   DOUBLE PRECISION
+);
+
 CREATE TABLE IF NOT EXISTS event (
     id       BIGSERIAL PRIMARY KEY,
     ts       TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -57,6 +66,7 @@ CREATE TABLE IF NOT EXISTS event (
 CREATE INDEX IF NOT EXISTS nvr_metrics_ts ON nvr_metrics (nvr_id, ts DESC);
 CREATE INDEX IF NOT EXISTS disk_metrics_ts ON disk_metrics (nvr_id, disk_name, ts DESC);
 CREATE INDEX IF NOT EXISTS raid_metrics_ts ON raid_metrics (nvr_id, raid_name, ts DESC);
+CREATE INDEX IF NOT EXISTS retention_metrics_ts ON retention_metrics (nvr_id, ts DESC);
 
 -- TimescaleDB (opsiyonel ama önerilir)
 DO $$
@@ -65,5 +75,6 @@ BEGIN
         PERFORM create_hypertable('nvr_metrics', 'ts', if_not_exists => TRUE, migrate_data => TRUE);
         PERFORM create_hypertable('disk_metrics', 'ts', if_not_exists => TRUE, migrate_data => TRUE);
         PERFORM create_hypertable('raid_metrics', 'ts', if_not_exists => TRUE, migrate_data => TRUE);
+        PERFORM create_hypertable('retention_metrics', 'ts', if_not_exists => TRUE, migrate_data => TRUE);
     END IF;
 END $$;

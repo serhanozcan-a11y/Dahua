@@ -13,11 +13,13 @@ sürücünün auth akışı için testlerdeki httpx.MockTransport kullanılır.
 from __future__ import annotations
 
 import os
+from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 
 SCENARIO = os.environ.get("SIM_SCENARIO", "healthy")
 PORT = int(os.environ.get("SIM_PORT", "8080"))
+OLDEST_DAYS = float(os.environ.get("SIM_OLDEST_DAYS", "32"))
 
 MAGICBOX = {
     "getDeviceType": "type=NVR608-32-4KS2\r\n",
@@ -70,14 +72,43 @@ def storage_response() -> str:
     return "".join(disks) + raid
 
 
+def media_find_response(action: str, query: dict) -> str | None:
+    """mediaFileFind akışının basit taklidi (tek finder, durum tutulmaz)."""
+    if action == "factory.create":
+        return "result=1000\r\n"
+    if action == "findFile":
+        return "OK\r\n"
+    if action == "findNextFile":
+        oldest = datetime.now() - timedelta(days=OLDEST_DAYS)
+        start = oldest.strftime("%Y-%m-%d %H:%M:%S")
+        end = (oldest + timedelta(minutes=15)).strftime("%Y-%m-%d %H:%M:%S")
+        return (
+            "found=1\r\n"
+            "items[0].Channel=1\r\n"
+            f"items[0].StartTime={start}\r\n"
+            f"items[0].EndTime={end}\r\n"
+            "items[0].FilePath=/mnt/dvr/sim/oldest.dav\r\n"
+        )
+    if action in ("close", "destroy"):
+        return "OK\r\n"
+    return None
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802 (stdlib API adı)
         url = urlparse(self.path)
-        action = parse_qs(url.query).get("action", [""])[0]
+        query = parse_qs(url.query)
+        action = query.get("action", [""])[0]
         if url.path == "/cgi-bin/magicBox.cgi" and action in MAGICBOX:
             body = MAGICBOX[action]
         elif url.path == "/cgi-bin/storageDevice.cgi" and action == "getDeviceAllInfo":
             body = storage_response()
+        elif url.path == "/cgi-bin/mediaFileFind.cgi":
+            maybe = media_find_response(action, query)
+            if maybe is None:
+                self.send_error(400, "Bad Request")
+                return
+            body = maybe
         else:
             self.send_error(400, "Bad Request")
             return

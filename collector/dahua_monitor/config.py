@@ -26,6 +26,18 @@ class DeviceConfig:
     reachability_interval_s: int = 60
     overwrite_recording: bool = True   # döngüsel kayıt: doluluk alarmı kapalı
 
+    # En eski kayıt tarihi (saklama derinliği) — günde bir sorgulanır.
+    # Cihazı yormamak için polling'den ayrı, seyrek bir döngüde koşar.
+    retention_check: bool = True
+    retention_interval_s: int = 86400
+    max_channels: int = 32          # taranacak kanal sayısı
+    first_channel: int = 1          # bazı firmware'ler 0 tabanlı; Faz 0'da doğrulanır
+    min_retention_days: int | None = None  # altına düşünce uyarı loglanır
+
+    @property
+    def channels(self) -> list[int]:
+        return list(range(self.first_channel, self.first_channel + self.max_channels))
+
     @property
     def base_url(self) -> str:
         scheme = "https" if self.https else "http"

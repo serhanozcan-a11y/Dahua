@@ -3,6 +3,9 @@
 Auth akışı (Digest→Basic→AuthFailed) ve getDeviceAllInfo eşlemesi doğrulanır.
 """
 
+from datetime import datetime
+from urllib.parse import parse_qs, urlparse
+
 import httpx
 import pytest
 
@@ -75,6 +78,50 @@ async def test_auth_fallback_to_basic():
     disks = await driver.get_disks()
     await driver.close()
     assert disks, "Basic fallback çalışmalı"
+
+
+async def test_oldest_recording():
+    """mediaFileFind akışı: create -> findFile -> findNextFile -> close+destroy.
+
+    Kanal 1'de eski kayıt, kanal 2'de daha da eski kayıt, kanal 3'te kayıt yok
+    (findFile 400 döner) — en eski olan seçilmeli, finder'lar temizlenmeli.
+    """
+    destroyed = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = urlparse(str(request.url))
+        q = parse_qs(url.query)
+        action = q.get("action", [""])[0]
+        if url.path != "/cgi-bin/mediaFileFind.cgi":
+            return httpx.Response(400)
+        if action == "factory.create":
+            return httpx.Response(200, text="result=77\r\n")
+        if action == "findFile":
+            handler.channel = int(q["condition.Channel"][0])
+            if handler.channel == 3:
+                return httpx.Response(400, text="Error\r\n")
+            return httpx.Response(200, text="OK\r\n")
+        if action == "findNextFile":
+            start = {1: "2024-05-10 09:00:00", 2: "2024-03-01 00:30:00"}[
+                handler.channel
+            ]
+            return httpx.Response(
+                200,
+                text=f"found=1\r\nitems[0].Channel={handler.channel}\r\n"
+                f"items[0].StartTime={start}\r\n",
+            )
+        if action in ("close", "destroy"):
+            if action == "destroy":
+                destroyed.append(q["object"][0])
+            return httpx.Response(200, text="OK\r\n")
+        return httpx.Response(400)
+
+    driver = make_driver(handler)
+    oldest = await driver.get_oldest_recording([1, 2, 3])
+    await driver.close()
+
+    assert oldest == datetime(2024, 3, 1, 0, 30, 0)
+    assert len(destroyed) == 3, "her kanal için finder destroy edilmeli"
 
 
 async def test_auth_failed_no_retry():

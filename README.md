@@ -70,5 +70,8 @@ cd collector && pip install -e ".[dev]" && pytest
 - RAID başına: seviye (RAID 0/1/5/6/10/50/60), durum (Active / Degraded / Rebuilding /
   Failed), rebuild yüzdesi, üye diskler, hot-spare durumu
 - Cihaz başına: erişilebilirlik (up/down), firmware sürümü, kayıt durumu, toplam/boş alan
+- Saklama derinliği: cihazdaki **en eski kaydın tarihi** günde bir sorgulanır
+  (`mediaFileFind.cgi` ile kanal taraması); `min_retention_days` tanımlıysa altına
+  düşüldüğünde uyarı üretilir
 - Olaylar: StorageFailure, StorageLowSpace, StorageNotExist, SMART anormalliği (hem
   polling hem NVR'ın kendi olay kanalı / SNMP trap üzerinden)

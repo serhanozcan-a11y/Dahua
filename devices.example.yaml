@@ -7,6 +7,10 @@ defaults:
   verify_tls: false
   poll_interval_s: 300       # disk/RAID sorgu aralığı
   reachability_interval_s: 60
+  retention_check: true      # günde bir: cihazdaki en eski kaydın tarihi
+  max_channels: 32           # taranacak kanal sayısı (cihazın kanal sayısı)
+  first_channel: 1           # bazı firmware'ler 0 tabanlı numaralandırır
+  # min_retention_days: 30   # saklama bu değerin altına düşerse uyarı
 
 devices:
   - name: nvr-merkez-01

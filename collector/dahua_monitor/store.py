@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 
 import asyncpg
 
@@ -31,6 +32,19 @@ class Store:
             host,
         )
         return row["id"]
+
+    async def write_retention(
+        self, nvr_id: int, oldest: datetime | None, retention_days: float | None
+    ) -> None:
+        await self._pool.execute(
+            """
+            INSERT INTO retention_metrics (ts, nvr_id, oldest_recording, retention_days)
+            VALUES (now(), $1, $2, $3)
+            """,
+            nvr_id,
+            oldest,
+            retention_days,
+        )
 
     async def write_poll(self, nvr_id: int, result: PollResult) -> None:
         async with self._pool.acquire() as conn, conn.transaction():
