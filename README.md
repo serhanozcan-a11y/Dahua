@@ -32,6 +32,36 @@ proje planı ve tasarımı.
   Grafana panosu (veya hafif özel web UI), e-posta/Telegram/SMS alarmları. Alternatif
   olarak Zabbix tabanlı hazır çözüm karşılaştırması `docs/02-mimari.md` içinde.
 
+## Geliştirme (Faz 1 iskeleti hazır)
+
+```
+collector/            # Python toplayıcı servis (dahua-monitor paketi)
+  dahua_monitor/
+    parsing.py        # Dahua anahtar=değer yanıt ayrıştırıcısı
+    models.py         # DiskInfo / RaidInfo / PollResult ortak modelleri
+    config.py         # devices.yaml + .env yükleme (parolalar env'den)
+    drivers/          # sürücü katmanı: base (arayüz) + cgi (Digest/Basic)
+    scheduler.py      # cihaz başına asyncio polling, lockout koruması
+    store.py          # PostgreSQL/Timescale yazımı
+    main.py           # dahua-monitor CLI girişi
+  tests/              # pytest (ağ yerine httpx.MockTransport)
+simulator/nvr_sim.py  # sahte NVR: healthy | disk_error | raid_degraded senaryoları
+db/schema.sql         # şema (Timescale varsa hypertable'a çevirir)
+docker-compose.yml    # db + collector + grafana (+ dev profilinde nvr-sim)
+```
+
+Hızlı başlangıç:
+
+```bash
+cp devices.example.yaml devices.yaml   # cihazları doldurun
+cp .env.example .env                   # parolaları doldurun
+docker compose up -d                   # db + collector + grafana
+docker compose --profile dev up -d     # + sahte NVR ile deneme
+
+# Testler
+cd collector && pip install -e ".[dev]" && pytest
+```
+
 ## Toplanacak ana metrikler
 
 - Disk başına: model/seri no, kapasite, kullanılan alan, durum (OK / Error / Absent),

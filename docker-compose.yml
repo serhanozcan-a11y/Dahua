@@ -1,0 +1,50 @@
+services:
+  db:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_DB: dahua
+      POSTGRES_USER: dahua
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?.env dosyasinda DB_PASSWORD tanimlayin}
+    volumes:
+      - ./pg-data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dahua"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  collector:
+    build: ./collector
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dahua:${DB_PASSWORD}@db:5432/dahua
+    env_file:
+      - .env
+    volumes:
+      - ./devices.yaml:/app/devices.yaml:ro
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:11.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+    depends_on:
+      - db
+
+  # Gerçek NVR olmadan uçtan uca deneme için sahte cihaz.
+  # devices.yaml'a host: nvr-sim, port: 8080 ile eklenir.
+  nvr-sim:
+    image: python:3.11-slim
+    command: python /sim/nvr_sim.py
+    environment:
+      SIM_SCENARIO: ${SIM_SCENARIO:-healthy}
+    volumes:
+      - ./simulator:/sim:ro
+    profiles: ["dev"]
