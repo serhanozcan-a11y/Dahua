@@ -21,10 +21,26 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://dahua:${DB_PASSWORD}@db:5432/dahua
+      SECRET_KEY: ${SECRET_KEY}
     env_file:
       - .env
     volumes:
       - ./devices.yaml:/app/devices.yaml:ro
+    restart: unless-stopped
+
+  # NVR envanter yönetimi + parola girişi (http://sunucu:8000, kullanıcı: admin)
+  panel:
+    build: ./collector
+    command: uvicorn dahua_monitor.panel:app --host 0.0.0.0 --port 8000
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dahua:${DB_PASSWORD}@db:5432/dahua
+      SECRET_KEY: ${SECRET_KEY:?.env dosyasinda SECRET_KEY tanimlayin}
+      PANEL_PASSWORD: ${PANEL_PASSWORD:?.env dosyasinda PANEL_PASSWORD tanimlayin}
+    ports:
+      - "8000:8000"
     restart: unless-stopped
 
   grafana:

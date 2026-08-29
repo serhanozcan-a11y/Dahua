@@ -40,6 +40,15 @@ class Severity(StrEnum):
     CRITICAL = "critical"
 
 
+# Anlık olay kanalından dinlenen kodlar ve önem eşlemesi
+EVENT_CODE_SEVERITY = {
+    "StorageFailure": Severity.CRITICAL,
+    "StorageNotExist": Severity.HIGH,
+    "StorageAbnormal": Severity.HIGH,
+    "StorageLowSpace": Severity.WARNING,
+}
+
+
 class Notifier(Protocol):
     async def send(self, subject: str, body: str) -> None: ...
 
@@ -125,6 +134,19 @@ class AlertManager:
             )
         else:
             await self._clear(dev, key, "saklama derinliği normale döndü")
+
+    async def device_event(
+        self, dev: DeviceConfig, code: str, action: str, index: str = ""
+    ) -> None:
+        """NVR'ın kendi olay kanalından (eventManager attach) gelen anlık olay."""
+        severity = EVENT_CODE_SEVERITY.get(code, Severity.WARNING)
+        key = f"{dev.name}/event/{code}/{index}"
+        if action == "Start":
+            await self._raise(
+                dev, key, severity, code, f"cihaz olayı: {code} (index={index})"
+            )
+        elif action == "Stop":
+            await self._clear(dev, key, f"cihaz olayı sona erdi: {code}")
 
     async def auth_failed(self, dev: DeviceConfig) -> None:
         await self._raise(

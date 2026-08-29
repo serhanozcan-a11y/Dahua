@@ -25,6 +25,8 @@ class DeviceConfig:
     poll_interval_s: int = 300
     reachability_interval_s: int = 60
     overwrite_recording: bool = True   # döngüsel kayıt: doluluk alarmı kapalı
+    event_stream: bool = True          # eventManager.cgi anlık olay aboneliği
+    rpc2: bool = False                 # DENEYSEL: RAID rebuild detayı (Faz 0'da doğrulayıp açın)
 
     # En eski kayıt tarihi (saklama derinliği) — günde bir sorgulanır.
     # Cihazı yormamak için polling'den ayrı, seyrek bir döngüde koşar.
@@ -83,7 +85,9 @@ class ConfigError(Exception):
 
 
 def load_config(path: str | Path) -> AppConfig:
-    data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    p = Path(path)
+    # Dosya yoksa boş konfig: cihazlar yalnız panelden (DB) gelebilir
+    data = (yaml.safe_load(p.read_text(encoding="utf-8")) or {}) if p.exists() else {}
     defaults = data.get("defaults", {})
     devices: list[DeviceConfig] = []
     for entry in data.get("devices", []):

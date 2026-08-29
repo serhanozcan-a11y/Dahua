@@ -12,9 +12,11 @@ sürücünün auth akışı için testlerdeki httpx.MockTransport kullanılır.
 
 from __future__ import annotations
 
+import json
 import os
+import time
 from datetime import datetime, timedelta
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 SCENARIO = os.environ.get("SIM_SCENARIO", "healthy")
@@ -94,11 +96,70 @@ def media_find_response(action: str, query: dict) -> str | None:
     return None
 
 
+def rpc2_response(payload: dict) -> dict:
+    """Basitleştirilmiş RPC2: login challenge + RAID.getDevices."""
+    method = payload.get("method", "")
+    rid = payload.get("id", 0)
+    if method == "global.login" and not payload.get("params", {}).get("password"):
+        return {
+            "id": rid, "session": "SIMSESSION", "result": False,
+            "params": {"realm": "Login to SIM", "random": "42abc",
+                       "encryption": "Default"},
+        }
+    if method == "global.login":
+        return {"id": rid, "session": "SIMSESSION", "result": True}
+    if method == "RAID.getDevices":
+        state = "Degrade" if SCENARIO == "raid_degraded" else "Active"
+        raid = {
+            "Name": "/dev/md0", "State": state,
+            "Members": ["/dev/sda", "/dev/sdb"], "HotSpares": [],
+        }
+        if SCENARIO == "raid_degraded":
+            raid["RebuildProgress"] = 37
+        return {"id": rid, "result": True, "params": {"raids": [raid]}}
+    return {"id": rid, "result": True}
+
+
 class Handler(BaseHTTPRequestHandler):
+    def _stream_events(self) -> None:
+        """attach: senaryoya göre bir olay, ardından heartbeat akışı."""
+        self.send_response(200)
+        self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=myboundary")
+        self.end_headers()
+        try:
+            if SCENARIO == "disk_error":
+                self.wfile.write(b"Code=StorageFailure;action=Start;index=1\r\n")
+            elif SCENARIO == "raid_degraded":
+                self.wfile.write(b"Code=StorageAbnormal;action=Start;index=0\r\n")
+            self.wfile.flush()
+            while True:
+                time.sleep(5)
+                self.wfile.write(b"Heartbeat\r\n")
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def do_POST(self) -> None:  # noqa: N802 (stdlib API adı)
+        url = urlparse(self.path)
+        if url.path not in ("/RPC2_Login", "/RPC2"):
+            self.send_error(400, "Bad Request")
+            return
+        length = int(self.headers.get("Content-Length", "0"))
+        payload = json.loads(self.rfile.read(length) or b"{}")
+        data = json.dumps(rpc2_response(payload)).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_GET(self) -> None:  # noqa: N802 (stdlib API adı)
         url = urlparse(self.path)
         query = parse_qs(url.query)
         action = query.get("action", [""])[0]
+        if url.path == "/cgi-bin/eventManager.cgi" and action == "attach":
+            self._stream_events()
+            return
         if url.path == "/cgi-bin/magicBox.cgi" and action in MAGICBOX:
             body = MAGICBOX[action]
         elif url.path == "/cgi-bin/storageDevice.cgi" and action == "getDeviceAllInfo":
@@ -125,4 +186,4 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"Sahte NVR :{PORT} üzerinde, senaryo: {SCENARIO}")
-    HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+    ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

@@ -6,7 +6,9 @@ import json
 from datetime import datetime
 
 import asyncpg
+from cryptography.fernet import Fernet
 
+from .config import DeviceConfig
 from .models import PollResult
 
 
@@ -32,6 +34,34 @@ class Store:
             host,
         )
         return row["id"]
+
+    async def load_device_configs(self, secret_key: str) -> list[DeviceConfig]:
+        """Panelden (device_config tablosu) eklenen cihazları yükler."""
+        fernet = Fernet(secret_key.encode())
+        rows = await self._pool.fetch("SELECT * FROM device_config WHERE enabled")
+        devices: list[DeviceConfig] = []
+        for r in rows:
+            devices.append(
+                DeviceConfig(
+                    name=r["name"],
+                    host=r["host"],
+                    port=r["port"],
+                    username=r["username"],
+                    password=fernet.decrypt(r["password_enc"].encode()).decode(),
+                    https=r["https"],
+                    verify_tls=r["verify_tls"],
+                    poll_interval_s=r["poll_interval_s"],
+                    reachability_interval_s=r["reachability_interval_s"],
+                    overwrite_recording=r["overwrite_recording"],
+                    event_stream=r["event_stream"],
+                    rpc2=r["rpc2"],
+                    retention_check=r["retention_check"],
+                    max_channels=r["max_channels"],
+                    first_channel=r["first_channel"],
+                    min_retention_days=r["min_retention_days"],
+                )
+            )
+        return devices
 
     async def write_event(
         self, device_name: str, source: str, code: str, severity: str, message: str

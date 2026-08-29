@@ -55,20 +55,24 @@ docker-compose.yml    # db + collector + grafana (+ dev profilinde nvr-sim)
 Gereksinim: Docker + Docker Compose kurulu bir Linux sunucu; NVR'ların bulunduğu
 CCTV ağına HTTP(S) erişimi.
 
-1. **Depoyu alın ve yapılandırın**
+1. **Tek komut kurulum** (izleme sunucusunda, örn. .182):
    ```bash
-   git clone <bu-depo> && cd Dahua
-   cp devices.example.yaml devices.yaml   # NVR listenizi doldurun
-   cp .env.example .env                   # DB/Grafana/cihaz parolalarını doldurun
-   chmod 600 .env
+   git clone <bu-depo> Dahua && cd Dahua
+   ./install.sh
    ```
+   Betik; rastgele parolalarla `.env` üretir (ekrana yazar — kaydedin),
+   şifreleme anahtarını (SECRET_KEY) oluşturur ve tüm yığını başlatır.
 2. **Her NVR'da izleme kullanıcısı açın** (web arayüzü → Hesap): salt-okunur
-   yetkili `monitor` kullanıcısı. Parolasını `.env`'e, adını `devices.yaml`'a yazın.
-3. **Başlatın**
+   yetkili `monitor` kullanıcısı.
+3. **Cihazları web panelinden ekleyin:** `http://sunucu:8000`
+   (kullanıcı `admin`, parola `.env`'deki `PANEL_PASSWORD`). NVR şifreleri
+   panele girilir ve veritabanında **şifreli** (Fernet/SECRET_KEY) saklanır —
+   düz metin parola hiçbir dosyaya yazılmaz. Ekleme sonrası:
    ```bash
-   docker compose up -d
-   docker compose logs -f collector      # "N cihaz izleniyor" görünmeli
+   docker compose restart collector
    ```
+   (İsteyen `devices.yaml` ile dosyadan da yönetebilir; ikisi birlikte çalışır,
+   aynı isimde panel kaydı önceliklidir.)
 4. **Panoya girin:** `http://sunucu:3000` (kullanıcı `admin`, parola `.env`'deki
    `GRAFANA_PASSWORD`). "Dahua NVR" klasöründeki **Dahua NVR Filosu** panosu
    veri kaynağıyla birlikte otomatik kurulur — elle tanım gerekmez.
@@ -108,5 +112,9 @@ cd collector && pip install -e ".[dev]" && pytest   # 16 test
 - Saklama derinliği: cihazdaki **en eski kaydın tarihi** günde bir sorgulanır
   (`mediaFileFind.cgi` ile kanal taraması); `min_retention_days` tanımlıysa altına
   düşüldüğünde uyarı üretilir
-- Olaylar: StorageFailure, StorageLowSpace, StorageNotExist, SMART anormalliği (hem
-  polling hem NVR'ın kendi olay kanalı / SNMP trap üzerinden)
+- Olaylar: StorageFailure, StorageLowSpace, StorageNotExist, StorageAbnormal —
+  hem polling (5 dk güvence katmanı) hem **anlık olay akışı** ile
+  (`eventManager.cgi` aboneliği: arıza saniyeler içinde alarma dönüşür;
+  kopan bağlantı üstel backoff ile otomatik yeniden kurulur)
+- RAID rebuild yüzdesi / üye diskler: RPC2 üzerinden (deneysel, cihaz başına
+  `rpc2: true` ile açılır — Faz 0'da gerçek cihazda doğrulandıktan sonra)

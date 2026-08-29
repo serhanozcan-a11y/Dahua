@@ -12,13 +12,15 @@ import logging
 import random
 import time
 
-from .alerts import AlertManager
+from .alerts import EVENT_CODE_SEVERITY, AlertManager, Severity
 from .config import DeviceConfig
-from .drivers import AuthFailed, CgiDriver, DriverError
+from .drivers import AuthFailed, CgiDriver, DriverError, Rpc2Client
 from .models import PollResult
 from .store import Store
 
 log = logging.getLogger(__name__)
+
+EVENT_CODES = list(EVENT_CODE_SEVERITY)
 
 
 async def poll_once(driver: CgiDriver) -> PollResult:
@@ -43,6 +45,11 @@ async def device_loop(
     driver = CgiDriver(
         cfg.base_url, cfg.username, cfg.password, verify_tls=cfg.verify_tls
     )
+    rpc2 = (
+        Rpc2Client(cfg.base_url, cfg.username, cfg.password, verify_tls=cfg.verify_tls)
+        if cfg.rpc2
+        else None
+    )
     nvr_id = await store.upsert_nvr(cfg.name, cfg.host)
     # Cihazların hepsinin aynı anda sorgulanmaması için başlangıç jitter'ı
     await _sleep(stop, random.uniform(0, min(10, cfg.poll_interval_s)))
@@ -64,6 +71,8 @@ async def device_loop(
                 if alerts is not None:
                     await alerts.auth_failed(cfg)
                 return
+            if result.reachable and result.raids and rpc2 is not None:
+                await _enrich_raid(cfg, rpc2, result)
             await store.write_poll(nvr_id, result)
             if alerts is not None:
                 await alerts.evaluate_poll(cfg, result)
@@ -83,6 +92,67 @@ async def device_loop(
             await _sleep(stop, interval)
     finally:
         await driver.close()
+        if rpc2 is not None:
+            await rpc2.close()
+
+
+async def _enrich_raid(cfg: DeviceConfig, rpc2: Rpc2Client, result: PollResult) -> None:
+    """RAID kayıtlarını RPC2 detayıyla zenginleştirir; hata izlemeyi bozmaz."""
+    try:
+        details = await rpc2.get_raid_details()
+    except (DriverError, AuthFailed) as exc:
+        log.debug("%s: RPC2 RAID detayı alınamadı: %s", cfg.name, exc)
+        return
+    for raid in result.raids:
+        detail = details.get(raid.name)
+        if not detail:
+            continue
+        if detail.get("rebuild_pct") is not None:
+            raid.rebuild_pct = float(detail["rebuild_pct"])
+        if detail.get("members"):
+            raid.members = list(detail["members"])
+        if detail.get("hot_spares"):
+            raid.hot_spares = list(detail["hot_spares"])
+
+
+async def event_loop(
+    cfg: DeviceConfig, store: Store, stop: asyncio.Event, alerts: AlertManager | None
+) -> None:
+    """Anlık olay aboneliği: arıza polling'i beklemeden saniyeler içinde işlenir.
+
+    Bağlantı koptuğunda üstel backoff ile yeniden bağlanır (en fazla 5 dk).
+    Polling her zaman güvence katmanı olarak ayrıca çalışır.
+    """
+    if not cfg.event_stream:
+        return
+    backoff = 5.0
+    while not stop.is_set():
+        driver = CgiDriver(
+            cfg.base_url, cfg.username, cfg.password, verify_tls=cfg.verify_tls
+        )
+        try:
+            async for code, action, index in driver.stream_events(EVENT_CODES):
+                backoff = 5.0
+                severity = EVENT_CODE_SEVERITY.get(code, Severity.WARNING)
+                log.info("%s: anlık olay %s %s index=%s", cfg.name, code, action, index)
+                try:
+                    await store.write_event(
+                        cfg.name, "event-stream", code, severity.value,
+                        f"{code} {action} (index={index})",
+                    )
+                except Exception:
+                    log.exception("%s: olay veritabanına yazılamadı", cfg.name)
+                if alerts is not None:
+                    await alerts.device_event(cfg, code, action, index)
+        except AuthFailed:
+            log.critical("%s: olay akışı auth reddi, akış durduruldu", cfg.name)
+            return
+        except DriverError as exc:
+            log.warning("%s: olay akışı koptu: %s", cfg.name, exc)
+        finally:
+            await driver.close()
+        await _sleep(stop, backoff)
+        backoff = min(backoff * 2, 300.0)
 
 
 async def retention_loop(
@@ -156,6 +226,7 @@ async def run_all(
     tasks += [
         asyncio.create_task(retention_loop(d, store, stop, alerts)) for d in devices
     ]
+    tasks += [asyncio.create_task(event_loop(d, store, stop, alerts)) for d in devices]
     try:
         await asyncio.gather(*tasks)
     except asyncio.CancelledError:

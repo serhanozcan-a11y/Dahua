@@ -153,6 +153,55 @@ class CgiDriver:
             )
         return raids
 
+    # --- Anlık olay akışı --------------------------------------------------
+
+    async def stream_events(self, codes: list[str]):
+        """`eventManager.cgi?action=attach` uzun ömürlü akışı.
+
+        (code, action, index) üçlüleri üretir; bağlantı kapanınca generator
+        biter — yeniden bağlanma ve backoff üst katmanın (scheduler) işidir.
+        """
+        path = (
+            "/cgi-bin/eventManager.cgi?action=attach&codes=["
+            + ",".join(codes)
+            + "]"
+        )
+        auths = [self._auth] if self._auth else self._auths
+        got_401 = False
+        for auth in auths:
+            try:
+                async with self._client.stream(
+                    "GET", path, auth=auth, timeout=httpx.Timeout(15, read=None)
+                ) as resp:
+                    if resp.status_code == 401:
+                        got_401 = True
+                        continue
+                    if resp.status_code >= 400:
+                        raise DriverError(f"event stream: HTTP {resp.status_code}")
+                    self._auth = auth
+                    async for raw in resp.aiter_lines():
+                        if "Code=" in raw:
+                            yield self._parse_event(raw)
+                    return
+            except httpx.HTTPError as exc:
+                raise DriverError(f"event stream: {exc}") from exc
+        if got_401:
+            self._auth = None
+            raise AuthFailed(f"{self._base_url}: event stream auth reddedildi")
+
+    @staticmethod
+    def _parse_event(line: str) -> tuple[str, str, str]:
+        # Satır biçimi: "...Code=StorageFailure;action=Start;index=0..."
+        fields: dict[str, str] = {}
+        for part in line[line.index("Code=") :].strip().split(";"):
+            key, _, value = part.partition("=")
+            fields[key.strip()] = value.strip()
+        return (
+            fields.get("Code", ""),
+            fields.get("action", ""),
+            fields.get("index", ""),
+        )
+
     # --- En eski kayıt tarihi (saklama derinliği) -------------------------
     #
     # mediaFileFind.cgi akışı: factory.create -> findFile (2000'den bugüne,

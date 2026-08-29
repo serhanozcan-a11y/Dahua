@@ -43,6 +43,30 @@ CREATE TABLE IF NOT EXISTS raid_metrics (
     raw         JSONB
 );
 
+-- Panelden yönetilen cihaz envanteri. password_enc, SECRET_KEY (Fernet) ile
+-- şifrelidir; düz metin parola veritabanına asla yazılmaz.
+CREATE TABLE IF NOT EXISTS device_config (
+    id                      SERIAL PRIMARY KEY,
+    name                    TEXT NOT NULL UNIQUE,
+    host                    TEXT NOT NULL,
+    port                    INT,
+    username                TEXT NOT NULL DEFAULT 'monitor',
+    password_enc            TEXT NOT NULL,
+    https                   BOOLEAN NOT NULL DEFAULT false,
+    verify_tls              BOOLEAN NOT NULL DEFAULT false,
+    poll_interval_s         INT NOT NULL DEFAULT 300,
+    reachability_interval_s INT NOT NULL DEFAULT 60,
+    overwrite_recording     BOOLEAN NOT NULL DEFAULT true,
+    event_stream            BOOLEAN NOT NULL DEFAULT true,
+    rpc2                    BOOLEAN NOT NULL DEFAULT false,
+    retention_check         BOOLEAN NOT NULL DEFAULT true,
+    max_channels            INT NOT NULL DEFAULT 32,
+    first_channel           INT NOT NULL DEFAULT 1,
+    min_retention_days      INT,
+    enabled                 BOOLEAN NOT NULL DEFAULT true,
+    updated_at              TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Günlük saklama derinliği: cihazdaki en eski kaydın tarihi.
 -- oldest_recording cihazın KENDİ saatiyle döner (tz bilgisi yok).
 CREATE TABLE IF NOT EXISTS retention_metrics (

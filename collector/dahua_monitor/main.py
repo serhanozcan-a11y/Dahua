@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import os
 import sys
 
 from .alerts import AlertManager, build_notifiers
@@ -13,11 +14,26 @@ from .store import Store
 
 async def _run(config_path: str) -> None:
     cfg = load_config(config_path)
-    if not cfg.devices:
-        raise ConfigError("devices.yaml içinde cihaz tanımlı değil")
     if not cfg.database_url:
         raise ConfigError("DATABASE_URL tanımlı değil")
     store = await Store.connect(cfg.database_url)
+
+    # Cihaz kaynakları: devices.yaml + panel (device_config tablosu).
+    # Aynı ad iki yerde varsa panel kaydı geçerlidir.
+    devices = {d.name: d for d in cfg.devices}
+    secret = os.environ.get("SECRET_KEY", "")
+    if secret:
+        try:
+            for d in await store.load_device_configs(secret):
+                devices[d.name] = d
+        except Exception:
+            logging.exception("panel cihazları yüklenemedi (device_config)")
+    cfg.devices = list(devices.values())
+    if not cfg.devices:
+        await store.close()
+        raise ConfigError(
+            "izlenecek cihaz yok: devices.yaml doldurun veya panelden ekleyin"
+        )
     notifiers = build_notifiers(cfg.alerting)
     alerts = AlertManager(cfg.alerting, notifiers, store)
     logging.info(
