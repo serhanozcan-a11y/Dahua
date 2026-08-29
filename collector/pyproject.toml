@@ -26,5 +26,8 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["dahua_monitor*"]
 
+[tool.setuptools.package-data]
+dahua_monitor = ["*.html"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
