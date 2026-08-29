@@ -33,10 +33,15 @@ services:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      DB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - ./grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
   # Gerçek NVR olmadan uçtan uca deneme için sahte cihaz.
   # devices.yaml'a host: nvr-sim, port: 8080 ile eklenir.

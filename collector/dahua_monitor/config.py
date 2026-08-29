@@ -46,9 +46,36 @@ class DeviceConfig:
 
 
 @dataclass
+class EmailConfig:
+    smtp_host: str
+    from_addr: str
+    to: list[str]
+    smtp_port: int = 587
+    starttls: bool = True
+    username: str = ""
+    password: str = ""
+    enabled: bool = True
+
+
+@dataclass
+class TelegramConfig:
+    bot_token: str
+    chat_id: str
+    enabled: bool = True
+
+
+@dataclass
+class AlertingConfig:
+    email: EmailConfig | None = None
+    telegram: TelegramConfig | None = None
+    reminder_hours: int = 24
+
+
+@dataclass
 class AppConfig:
     devices: list[DeviceConfig] = field(default_factory=list)
     database_url: str = ""
+    alerting: AlertingConfig = field(default_factory=AlertingConfig)
 
 
 class ConfigError(Exception):
@@ -83,4 +110,37 @@ def load_config(path: str | Path) -> AppConfig:
     return AppConfig(
         devices=devices,
         database_url=os.environ.get("DATABASE_URL", data.get("database_url", "")),
+        alerting=_load_alerting(data.get("alerting", {})),
+    )
+
+
+def _resolve_env(section: dict, env_key: str, target: str, required: bool) -> None:
+    """`xxx_env: VAR` alanını ortamdan okuyup `target` alanına çevirir."""
+    var = section.pop(env_key, None)
+    if var:
+        value = os.environ.get(var, "")
+        if not value and required:
+            raise ConfigError(f"{var} ortam değişkeni tanımlı değil")
+        section[target] = value
+
+
+def _load_alerting(data: dict) -> AlertingConfig:
+    email = None
+    if data.get("email"):
+        section = dict(data["email"])
+        section["from_addr"] = section.pop("from", section.pop("from_addr", ""))
+        _resolve_env(section, "password_env", "password",
+                     required=bool(section.get("username")))
+        email = EmailConfig(**section)
+        if not email.smtp_host or not email.to:
+            raise ConfigError("alerting.email: smtp_host ve to zorunlu")
+    telegram = None
+    if data.get("telegram"):
+        section = dict(data["telegram"])
+        _resolve_env(section, "bot_token_env", "bot_token", required=True)
+        telegram = TelegramConfig(**section)
+    return AlertingConfig(
+        email=email,
+        telegram=telegram,
+        reminder_hours=int(data.get("reminder_hours", 24)),
     )

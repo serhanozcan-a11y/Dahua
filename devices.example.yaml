@@ -1,6 +1,23 @@
 # devices.yaml olarak kopyalayıp doldurun. Parolalar bu dosyaya YAZILMAZ;
 # her cihaz .env içindeki bir ortam değişkenine işaret eder (password_env).
 
+# Alarm bildirimleri. email/telegram bölümlerini silerseniz alarmlar yalnız
+# log + event tablosuna yazılır (uygulama yine sorunsuz çalışır).
+alerting:
+  reminder_hours: 24         # çözülmeyen kritik alarm hatırlatma aralığı
+  email:
+    smtp_host: mail.sirket.local
+    smtp_port: 587
+    starttls: true
+    username: monitor@sirket.com
+    password_env: SMTP_PASSWORD
+    from: monitor@sirket.com
+    to:
+      - bt-ekibi@sirket.com
+  # telegram:
+  #   bot_token_env: TELEGRAM_BOT_TOKEN
+  #   chat_id: "-1001234567890"
+
 defaults:
   username: monitor          # NVR'da açılmış salt-izleme kullanıcısı
   https: false

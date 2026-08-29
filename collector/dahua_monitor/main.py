@@ -5,6 +5,7 @@ import asyncio
 import logging
 import sys
 
+from .alerts import AlertManager, build_notifiers
 from .config import ConfigError, load_config
 from .scheduler import run_all
 from .store import Store
@@ -17,9 +18,15 @@ async def _run(config_path: str) -> None:
     if not cfg.database_url:
         raise ConfigError("DATABASE_URL tanımlı değil")
     store = await Store.connect(cfg.database_url)
-    logging.info("%d cihaz izleniyor", len(cfg.devices))
+    notifiers = build_notifiers(cfg.alerting)
+    alerts = AlertManager(cfg.alerting, notifiers, store)
+    logging.info(
+        "%d cihaz izleniyor, %d bildirim kanalı aktif",
+        len(cfg.devices),
+        len(notifiers),
+    )
     try:
-        await run_all(cfg.devices, store)
+        await run_all(cfg.devices, store, alerts)
     finally:
         await store.close()
 

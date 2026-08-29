@@ -12,6 +12,7 @@ import logging
 import random
 import time
 
+from .alerts import AlertManager
 from .config import DeviceConfig
 from .drivers import AuthFailed, CgiDriver, DriverError
 from .models import PollResult
@@ -36,7 +37,9 @@ async def poll_once(driver: CgiDriver) -> PollResult:
     )
 
 
-async def device_loop(cfg: DeviceConfig, store: Store, stop: asyncio.Event) -> None:
+async def device_loop(
+    cfg: DeviceConfig, store: Store, stop: asyncio.Event, alerts: AlertManager | None
+) -> None:
     driver = CgiDriver(
         cfg.base_url, cfg.username, cfg.password, verify_tls=cfg.verify_tls
     )
@@ -58,8 +61,12 @@ async def device_loop(cfg: DeviceConfig, store: Store, stop: asyncio.Event) -> N
                 await store.write_poll(
                     nvr_id, PollResult(reachable=False, error=f"auth: {exc}")
                 )
+                if alerts is not None:
+                    await alerts.auth_failed(cfg)
                 return
             await store.write_poll(nvr_id, result)
+            if alerts is not None:
+                await alerts.evaluate_poll(cfg, result)
             if not result.reachable:
                 log.warning("%s: erişilemedi: %s", cfg.name, result.error)
             else:
@@ -78,7 +85,9 @@ async def device_loop(cfg: DeviceConfig, store: Store, stop: asyncio.Event) -> N
         await driver.close()
 
 
-async def retention_loop(cfg: DeviceConfig, store: Store, stop: asyncio.Event) -> None:
+async def retention_loop(
+    cfg: DeviceConfig, store: Store, stop: asyncio.Event, alerts: AlertManager | None
+) -> None:
     """Günde bir: cihazdaki en eski kaydın tarihi (fiilî saklama derinliği).
 
     Kanal kanal mediaFileFind taraması cihaz için polling'den daha maliyetli
@@ -125,6 +134,8 @@ async def retention_loop(cfg: DeviceConfig, store: Store, stop: asyncio.Event) -
             else:
                 log.warning("%s: hiçbir kanalda kayıt bulunamadı", cfg.name)
             await store.write_retention(nvr_id, oldest, retention_days)
+            if alerts is not None:
+                await alerts.evaluate_retention(cfg, retention_days)
             await _sleep(stop, cfg.retention_interval_s)
     finally:
         await driver.close()
@@ -137,10 +148,14 @@ async def _sleep(stop: asyncio.Event, seconds: float) -> None:
         pass
 
 
-async def run_all(devices: list[DeviceConfig], store: Store) -> None:
+async def run_all(
+    devices: list[DeviceConfig], store: Store, alerts: AlertManager | None = None
+) -> None:
     stop = asyncio.Event()
-    tasks = [asyncio.create_task(device_loop(d, store, stop)) for d in devices]
-    tasks += [asyncio.create_task(retention_loop(d, store, stop)) for d in devices]
+    tasks = [asyncio.create_task(device_loop(d, store, stop, alerts)) for d in devices]
+    tasks += [
+        asyncio.create_task(retention_loop(d, store, stop, alerts)) for d in devices
+    ]
     try:
         await asyncio.gather(*tasks)
     except asyncio.CancelledError:

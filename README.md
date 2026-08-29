@@ -50,16 +50,51 @@ db/schema.sql         # şema (Timescale varsa hypertable'a çevirir)
 docker-compose.yml    # db + collector + grafana (+ dev profilinde nvr-sim)
 ```
 
-Hızlı başlangıç:
+## Kurulum (sunucuda, adım adım)
+
+Gereksinim: Docker + Docker Compose kurulu bir Linux sunucu; NVR'ların bulunduğu
+CCTV ağına HTTP(S) erişimi.
+
+1. **Depoyu alın ve yapılandırın**
+   ```bash
+   git clone <bu-depo> && cd Dahua
+   cp devices.example.yaml devices.yaml   # NVR listenizi doldurun
+   cp .env.example .env                   # DB/Grafana/cihaz parolalarını doldurun
+   chmod 600 .env
+   ```
+2. **Her NVR'da izleme kullanıcısı açın** (web arayüzü → Hesap): salt-okunur
+   yetkili `monitor` kullanıcısı. Parolasını `.env`'e, adını `devices.yaml`'a yazın.
+3. **Başlatın**
+   ```bash
+   docker compose up -d
+   docker compose logs -f collector      # "N cihaz izleniyor" görünmeli
+   ```
+4. **Panoya girin:** `http://sunucu:3000` (kullanıcı `admin`, parola `.env`'deki
+   `GRAFANA_PASSWORD`). "Dahua NVR" klasöründeki **Dahua NVR Filosu** panosu
+   veri kaynağıyla birlikte otomatik kurulur — elle tanım gerekmez.
+5. **Alarmları test edin:** `devices.yaml`'daki `alerting.email` bölümünü kendi
+   SMTP sunucunuza göre doldurun. Gerçek cihaz riske atmadan denemek için sahte
+   NVR ile arıza senaryosu üretebilirsiniz:
+   ```bash
+   SIM_SCENARIO=raid_degraded docker compose --profile dev up -d nvr-sim
+   # devices.yaml'a sim cihazını ekleyin (örnek dosyada hazır) → kritik alarm düşer
+   ```
+6. **Kalıcılık:** `pg-data/` ve `grafana-data/` dizinlerini yedekleme planınıza
+   ekleyin. Servisler `restart: unless-stopped` ile çöküş/yeniden başlatmada
+   kendiliğinden kalkar.
+
+Sorun giderme:
+- Collector loglarında `kimlik doğrulama reddedildi ... DURAKLATILDI` görürseniz
+  cihaz parolası yanlıştır; lockout koruması gereği o cihaz otomatik durdurulur —
+  `.env`'i düzeltip `docker compose restart collector` deyin.
+- Bir cihazdan RAID/SMART verisi gelmiyorsa firmware'i desteklemiyor olabilir;
+  cihaz yine disk durumu + kapasite + erişilebilirlik ile izlenir
+  (bkz. docs/01-arastirma.md §1.3).
+
+Geliştirme ortamı testleri:
 
 ```bash
-cp devices.example.yaml devices.yaml   # cihazları doldurun
-cp .env.example .env                   # parolaları doldurun
-docker compose up -d                   # db + collector + grafana
-docker compose --profile dev up -d     # + sahte NVR ile deneme
-
-# Testler
-cd collector && pip install -e ".[dev]" && pytest
+cd collector && pip install -e ".[dev]" && pytest   # 16 test
 ```
 
 ## Toplanacak ana metrikler

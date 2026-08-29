@@ -33,6 +33,22 @@ class Store:
         )
         return row["id"]
 
+    async def write_event(
+        self, device_name: str, source: str, code: str, severity: str, message: str
+    ) -> None:
+        await self._pool.execute(
+            """
+            INSERT INTO event (nvr_id, source, code, severity, payload)
+            VALUES ((SELECT id FROM nvr WHERE name=$1), $2, $3, $4,
+                    jsonb_build_object('message', $5::text))
+            """,
+            device_name,
+            source,
+            code,
+            severity,
+            message,
+        )
+
     async def write_retention(
         self, nvr_id: int, oldest: datetime | None, retention_days: float | None
     ) -> None:
