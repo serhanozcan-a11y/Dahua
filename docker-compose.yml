@@ -46,7 +46,8 @@ services:
   grafana:
     image: grafana/grafana-oss:11.2.0
     ports:
-      - "3000:3000"
+      # Sunucuda 3000 doluysa .env'e GRAFANA_PORT=3001 yazmak yeterli
+      - "${GRAFANA_PORT:-3000}:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
       DB_PASSWORD: ${DB_PASSWORD}

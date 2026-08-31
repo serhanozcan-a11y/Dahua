@@ -19,21 +19,27 @@ async def _run(config_path: str) -> None:
     store = await Store.connect(cfg.database_url)
 
     # Cihaz kaynakları: devices.yaml + panel (device_config tablosu).
-    # Aynı ad iki yerde varsa panel kaydı geçerlidir.
-    devices = {d.name: d for d in cfg.devices}
-    secret = os.environ.get("SECRET_KEY", "")
-    if secret:
-        try:
-            for d in await store.load_device_configs(secret):
-                devices[d.name] = d
-        except Exception:
-            logging.exception("panel cihazları yüklenemedi (device_config)")
-    cfg.devices = list(devices.values())
-    if not cfg.devices:
-        await store.close()
-        raise ConfigError(
-            "izlenecek cihaz yok: devices.yaml doldurun veya panelden ekleyin"
+    # Aynı ad iki yerde varsa panel kaydı geçerlidir. Hiç cihaz yoksa çökmek
+    # yerine bekle: taze kurulumda kullanıcı cihazları panelden ekleyecek.
+    async def merged_devices() -> list:
+        devices = {d.name: d for d in cfg.devices}
+        secret = os.environ.get("SECRET_KEY", "")
+        if secret:
+            try:
+                for d in await store.load_device_configs(secret):
+                    devices[d.name] = d
+            except Exception:
+                logging.exception("panel cihazları yüklenemedi (device_config)")
+        return list(devices.values())
+
+    cfg.devices = await merged_devices()
+    while not cfg.devices:
+        logging.warning(
+            "izlenecek cihaz yok — panelden (:8000) cihaz ekleyin; "
+            "60 sn sonra yeniden denenecek"
         )
+        await asyncio.sleep(60)
+        cfg.devices = await merged_devices()
     notifiers = build_notifiers(cfg.alerting)
     alerts = AlertManager(cfg.alerting, notifiers, store)
     logging.info(
