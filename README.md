@@ -83,7 +83,7 @@ CCTV ağına HTTP(S) erişimi.
    SIM_SCENARIO=raid_degraded docker compose --profile dev up -d nvr-sim
    # devices.yaml'a sim cihazını ekleyin (örnek dosyada hazır) → kritik alarm düşer
    ```
-6. **Kalıcılık:** `pg-data/` ve `grafana-data/` dizinlerini yedekleme planınıza
+6. **Kalıcılık:** `pg-data/` dizinini ve `grafana-data` docker volume'unu yedekleme planınıza
    ekleyin. Servisler `restart: unless-stopped` ile çöküş/yeniden başlatmada
    kendiliğinden kalkar.
 
