@@ -1,0 +1,1439 @@
+<title>Nöbetçi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#e9edf2; --surface:#ffffff; --surface-2:#f4f7fa; --inset:#eef2f6; --field:#ffffff;
+    --ink:#141d2a; --muted:#586778; --faint:#8393a4; --hairline:#d9e0e8;
+    --accent:#215f9e; --accent-soft:rgba(33,95,158,.10); --accent-line:rgba(33,95,158,.28);
+    --accent2:#0e8a99; --glow:rgba(33,95,158,.06); --card-top:rgba(255,255,255,.5);
+    --ok:#137a49; --ok-soft:rgba(19,122,73,.12);
+    --warn:#9a6410; --warn-soft:rgba(154,100,16,.13);
+    --crit:#bd3b3b; --crit-soft:rgba(189,59,59,.12);
+    --shadow:0 1px 2px rgba(20,29,42,.04),0 8px 24px rgba(20,29,42,.06);
+    --shadow-lg:0 8px 20px rgba(20,29,42,.10),0 30px 60px rgba(20,29,42,.16);
+    --track:#dde4ec;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0c121a; --surface:#141c27; --surface-2:#19222f; --inset:#111925; --field:#0f1722;
+    --ink:#e8eef6; --muted:#94a4b6; --faint:#6b7c8f; --hairline:#26313f;
+    --accent:#5ea0dd; --accent-soft:rgba(94,160,221,.14); --accent-line:rgba(94,160,221,.34);
+    --accent2:#42c3d4; --glow:rgba(94,160,221,.10); --card-top:rgba(255,255,255,.045);
+    --ok:#33c081; --ok-soft:rgba(51,192,129,.15);
+    --warn:#d69a3a; --warn-soft:rgba(214,154,58,.15);
+    --crit:#e5706b; --crit-soft:rgba(229,112,107,.16);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    --shadow-lg:0 12px 30px rgba(0,0,0,.45),0 40px 80px rgba(0,0,0,.5);
+    --track:#26313f;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0c121a; --surface:#141c27; --surface-2:#19222f; --inset:#111925; --field:#0f1722;
+    --ink:#e8eef6; --muted:#94a4b6; --faint:#6b7c8f; --hairline:#26313f;
+    --accent:#5ea0dd; --accent-soft:rgba(94,160,221,.14); --accent-line:rgba(94,160,221,.34);
+    --accent2:#42c3d4; --glow:rgba(94,160,221,.10); --card-top:rgba(255,255,255,.045);
+    --ok:#33c081; --ok-soft:rgba(51,192,129,.15);
+    --warn:#d69a3a; --warn-soft:rgba(214,154,58,.15);
+    --crit:#e5706b; --crit-soft:rgba(229,112,107,.16);
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    --shadow-lg:0 12px 30px rgba(0,0,0,.45),0 40px 80px rgba(0,0,0,.5);
+    --track:#26313f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);background-image:radial-gradient(1100px 480px at 50% -170px, var(--glow), transparent 68%);background-attachment:fixed;color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .mono{font-family:"IBM Plex Mono","SF Mono",ui-monospace,Menlo,monospace}
+  .tnum{font-variant-numeric:tabular-nums}
+  a{color:var(--accent)}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 clamp(16px,4vw,40px) 64px}
+
+  /* top nav + view tabs */
+  .topnav{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--hairline);padding:11px clamp(16px,4vw,40px)}
+  .brand{font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;font-size:16px}
+  .brand .bsub{color:var(--faint);font-weight:500;font-size:12px;font-family:"IBM Plex Mono",monospace}
+  .vtabs{display:flex;gap:4px;margin-left:4px}
+  .vtab{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:14px;padding:8px 15px;border-radius:9px;cursor:pointer}
+  .vtab:hover{color:var(--ink);background:var(--inset)}
+  .vtab[aria-selected="true"]{color:var(--accent);background:var(--accent-soft)}
+  .vtab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .albadge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--crit);color:#fff;font-size:11px;font-weight:700;margin-left:3px;vertical-align:middle}
+  .alfilters{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .sevpill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:700;white-space:nowrap}
+  .sev-critical{background:color-mix(in srgb,var(--crit) 16%,transparent);color:var(--crit)}
+  .sev-high{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+  .sev-warning{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn)}
+  .sev-info{background:var(--inset);color:var(--muted)}
+  .navright{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .toggle{appearance:none;border:1px solid var(--hairline);background:var(--surface);color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer}
+  .toggle:hover{color:var(--ink);border-color:var(--accent-line)}
+
+  .view[hidden]{display:none}
+  .view{padding-top:26px}
+  .vhead{margin-bottom:18px}
+  .vhead h1{font-size:clamp(22px,3.4vw,30px);font-weight:700;letter-spacing:-.02em;margin:0 0 4px}
+  .vhead p{color:var(--muted);font-size:14px;margin:0;max-width:64ch}
+
+  section{margin-top:26px}
+  .sec-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .sec-head h2{font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:0}
+  .sec-head .rule{flex:1;height:1px;background:var(--hairline)}
+  .sec-head .live-ind,.sec-head .count{margin-left:2px}
+
+  .card{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;box-shadow:inset 0 1px 0 var(--card-top),var(--shadow);padding:18px 20px}
+  .card>h3{margin:0 0 12px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:9px}
+  .card>h3 .ic{width:8px;height:8px;border-radius:50%}
+  .note{font-size:12.5px;color:var(--faint);margin:12px 2px 0;max-width:78ch}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  @media (max-width:760px){.grid2{grid-template-columns:1fr}}
+
+  .chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .chip{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--hairline);border-radius:12px;padding:13px 15px;box-shadow:var(--shadow)}
+  .chip .led{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 3px var(--ok-soft)}
+  .chip .cn{font-weight:600;font-size:14px} .chip .cs{margin-left:auto;font-size:12px;color:var(--muted)}
+
+  .live-ind{display:inline-flex;align-items:center;gap:7px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:600;color:var(--ok)}
+  .live-ind .d{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft);flex:none}
+  .live-ind.stale{color:var(--warn)} .live-ind.stale .d{background:var(--warn);box-shadow:0 0 0 3px var(--warn-soft)}
+  .live-ind .d.pulse{animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .count{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);background:var(--inset);border:1px solid var(--hairline);padding:2px 9px;border-radius:999px}
+
+  /* device grid */
+  .devgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+  .devcard{position:relative;display:flex;gap:16px;align-items:center;text-align:left;width:100%;cursor:pointer;background:var(--surface);border:1px solid var(--hairline);border-radius:16px;padding:18px;box-shadow:inset 0 1px 0 var(--card-top),var(--shadow);color:inherit;font:inherit;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease}
+  .devcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--accent-line)}
+  .devcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .gauge{position:relative;width:84px;height:84px;flex:none}
+  .gauge svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .gauge .gtrack{fill:none;stroke:var(--track);stroke-width:9}
+  .gauge .garc{fill:none;stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+  .gauge.tone-ok .garc{stroke:var(--ok);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--ok) 45%,transparent))}
+  .gauge.tone-warn .garc{stroke:var(--warn);filter:drop-shadow(0 0 5px color-mix(in srgb,var(--warn) 45%,transparent))}
+  .gauge.tone-crit .garc{stroke:var(--crit);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--crit) 50%,transparent))}
+  .gauge .gc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+  .gauge .gc b{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
+  .gauge .gc span{font-family:"IBM Plex Mono",monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .dc-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .dc-name{font-weight:700;font-size:17px;letter-spacing:-.01em}
+  .dc-sub{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dc-upd{color:var(--warn);font-weight:700;font-family:"IBM Plex Sans",system-ui,sans-serif}
+  .dc-badge{align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;margin-top:1px}
+  .dc-badge.tone-ok{background:var(--ok-soft);color:var(--ok)} .dc-badge.tone-warn{background:var(--warn-soft);color:var(--warn)} .dc-badge.tone-crit{background:var(--crit-soft);color:var(--crit)}
+  .dc-badge .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+  .dc-stats{display:flex;flex-wrap:wrap;gap:5px 6px;margin-top:5px}
+  .dc-stats span{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);background:var(--inset);border:1px solid var(--hairline);padding:2px 7px;border-radius:6px}
+  .dc-fc{margin-top:5px;align-self:flex-start;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px}
+  .fc-ok{background:var(--ok-soft);color:var(--ok)} .fc-warn{background:var(--warn-soft);color:var(--warn)} .fc-crit{background:var(--crit-soft);color:var(--crit)} .fc-muted{background:var(--inset);color:var(--muted)}
+  .dc-go{align-self:stretch;display:flex;align-items:center;color:var(--faint);font-size:18px;padding-left:4px}
+  .devcard:hover .dc-go{color:var(--accent)}
+  .spark{width:100%;height:26px;margin-top:4px;display:block;overflow:visible}
+  .spark polyline{fill:none;stroke:var(--accent);stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+  .spark circle{fill:var(--accent)}
+  .spark.tone-ret polyline{stroke:var(--ok)} .spark.tone-ret circle{fill:var(--ok)}
+
+  /* modal */
+  .backdrop{position:fixed;inset:0;background:rgba(8,12,18,.55);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:clamp(12px,4vh,48px) 14px;z-index:50;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease}
+  .backdrop.open{opacity:1;visibility:visible}
+  .modal{width:min(720px,100%);max-height:calc(100vh - 40px);overflow-y:auto;background:var(--surface);border:1px solid var(--hairline);border-radius:18px;box-shadow:var(--shadow-lg);transform:translateY(12px) scale(.99);transition:transform .2s ease}
+  .backdrop.open .modal{transform:none}
+  .m-head{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:18px 22px;border-bottom:1px solid var(--hairline);background:linear-gradient(var(--surface-2),var(--surface))}
+  .m-head .name{font-weight:700;font-size:19px} .m-head .addr{font-family:"IBM Plex Mono",monospace;color:var(--muted);font-size:13px}
+  .m-close{margin-left:auto;appearance:none;border:1px solid var(--hairline);background:var(--surface);color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:17px;display:grid;place-items:center}
+  .m-close:hover{color:var(--ink);border-color:var(--accent-line)}
+  .m-body{padding:20px 22px 24px}
+  .m-body h4{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:22px 0 11px}
+  .m-body h4:first-child{margin-top:0}
+  .badge{font-family:"IBM Plex Mono",monospace;font-size:12px;padding:4px 9px;border-radius:6px;background:var(--inset);color:var(--muted);border:1px solid var(--hairline)}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:12px;overflow:hidden}
+  .tile{background:var(--surface);padding:15px 16px;display:flex;flex-direction:column;gap:8px;min-height:96px}
+  .tile .tl{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .tile .tv{font-size:23px;font-weight:600;letter-spacing:-.02em;line-height:1} .tile .tv small{font-size:13px;font-weight:500;color:var(--muted)}
+  .tile .tsub{font-size:12px;color:var(--muted);margin-top:auto}
+  .tag-ok{color:var(--ok);font-weight:600}
+  .bar{height:6px;border-radius:4px;background:var(--track);overflow:hidden;margin-top:2px}
+  .bar>i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--ok),color-mix(in srgb,var(--ok) 70%,var(--accent)))}
+  .fc{display:grid;gap:8px}
+  .fcrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border:1px solid var(--hairline);border-left:3px solid var(--hairline);border-radius:10px;background:var(--surface-2)}
+  .fcrow .fl{font-size:13px;font-weight:600;color:var(--muted)} .fcrow .fv{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600}
+  .fcrow.tone-ok{border-left-color:var(--ok)} .fcrow.tone-ok .fv{color:var(--ok)}
+  .fcrow.tone-warn{border-left-color:var(--warn)} .fcrow.tone-warn .fv{color:var(--warn)}
+  .fcrow.tone-crit{border-left-color:var(--crit)} .fcrow.tone-crit .fv{color:var(--crit)}
+  .fcrow.tone-muted .fv{color:var(--faint)}
+  .disks{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:9px}
+  .disk{background:var(--surface-2);border:1px solid var(--hairline);border-left:3px solid var(--ok);border-radius:10px;padding:11px 12px;display:flex;flex-direction:column;gap:5px}
+  .disk.bad{border-left-color:var(--crit)}
+  .disk .dn{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px}
+  .disk .dn::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 3px var(--ok-soft)}
+  .disk.bad .dn::before{background:var(--crit);box-shadow:0 0 0 3px var(--crit-soft)}
+  .disk .dmeta{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint)} .disk .dstat{font-size:12px;font-weight:600;color:var(--ok)} .disk.bad .dstat{color:var(--crit)}
+  .disk.spare{border-left-color:var(--warn)} .disk.spare .dstat{color:var(--warn)} .disk.spare .dn::before{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 30%,transparent)}
+  .dhbox{border:1px solid var(--hairline);border-left:3px solid var(--ok);border-radius:12px;padding:13px 15px;background:var(--surface-2);display:flex;flex-direction:column;gap:7px}
+  .dhbox.tone-warn{border-left-color:var(--warn)} .dhbox.tone-crit{border-left-color:var(--crit)}
+  .dhtop{display:flex;align-items:center;gap:10px;flex-wrap:wrap} .dhsum{font-size:13px;font-weight:600;color:var(--text)}
+  .dhdet{font-size:13px;color:var(--muted)} .dhbox.tone-crit .dhdet{color:var(--crit);font-weight:600}
+  .bar.warn>i{background:linear-gradient(90deg,var(--warn),color-mix(in srgb,var(--warn) 70%,var(--accent)))}
+  .dfstrip{display:flex;flex-direction:column;gap:12px}
+  .dfstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+  .dfstat{background:var(--surface-2);border:1px solid var(--hairline);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+  .dfstat b{font-size:24px;line-height:1.1} .dfstat span{font-size:12px;color:var(--faint)}
+  .dfstat.ok b{color:var(--ok)} .dfstat.warn b{color:var(--warn)} .dfstat.crit b{color:var(--crit)}
+  .dfchips{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px}
+  .dfchip{text-align:left;background:var(--surface-2);border:1px solid var(--hairline);border-left:3px solid var(--ok);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:border-color .15s,transform .05s}
+  .dfchip:hover{transform:translateY(-1px)} .dfchip .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
+  .dfchip.tone-warn{border-left-color:var(--warn)} .dfchip.tone-warn .dot{background:var(--warn)}
+  .dfchip.tone-crit{border-left-color:var(--crit)} .dfchip.tone-crit .dot{background:var(--crit)}
+  .dfchip .dfn{font-weight:600;font-size:13px} .dfchip .dfm{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);margin-left:auto;white-space:nowrap}
+  .chans{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:7px}
+  .chan{display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1px solid var(--hairline);border-radius:9px;padding:8px 11px}
+  .chan .ci{flex:none;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:var(--track);border-radius:6px;font-size:11px;color:var(--muted)}
+  .chan .cnm{font-size:12.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tablewrap{border:1px solid var(--hairline);border-radius:12px;overflow-x:auto}
+  table.t{width:100%;border-collapse:collapse;font-size:13px;min-width:440px}
+  table.t th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:500;padding:11px 14px;border-bottom:1px solid var(--hairline);background:var(--surface-2);white-space:nowrap}
+  table.t td{padding:11px 14px;border-bottom:1px dashed var(--hairline);vertical-align:middle}
+  table.t tbody tr:last-child td{border-bottom:none}
+  table.t td.ip{font-family:"IBM Plex Mono",monospace;font-weight:600;white-space:nowrap}
+  .stag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;padding:2px 6px;border-radius:5px;background:var(--inset);color:var(--muted);border:1px solid var(--hairline);margin:1px 2px 1px 0}
+  .stag.self{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+
+  /* management */
+  .mtabs{display:flex;gap:4px;flex-wrap:wrap;background:var(--inset);border:1px solid var(--hairline);border-radius:12px;padding:5px;margin-bottom:22px;width:fit-content}
+  .mtab{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:14px;padding:9px 15px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .mtab:hover{color:var(--ink)} .mtab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+  .mpanel[hidden]{display:none}
+  label.f{display:block;margin-bottom:14px}
+  label.f>span{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px}
+  .req{color:var(--crit)}
+  input[type=text],input[type=password],input[type=email],input[type=number],select,textarea{width:100%;font:inherit;font-size:14px;color:var(--ink);background:var(--field);border:1px solid var(--hairline);border-radius:9px;padding:10px 12px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .frow{display:grid;grid-template-columns:1fr 1fr;gap:12px} @media (max-width:520px){.frow{grid-template-columns:1fr}}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg .opt{flex:1;min-width:92px;position:relative} .seg .opt input{position:absolute;opacity:0;inset:0;cursor:pointer}
+  .seg .opt span{display:block;text-align:center;padding:9px 8px;border:1px solid var(--hairline);border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+  .seg .opt input:checked + span{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:8px} @media (max-width:520px){.checks{grid-template-columns:1fr}}
+  .chk{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--hairline);border-radius:9px;font-size:13.5px;cursor:pointer;background:var(--surface-2)}
+  .chk input{width:16px;height:16px;accent-color:var(--accent);flex:none} .chk.on{border-color:var(--accent-line);background:var(--accent-soft)}
+  .btn{appearance:none;border:0;border-radius:10px;font:inherit;font-weight:600;font-size:14px;padding:11px 18px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  .btn.primary{background:var(--accent);color:#fff} .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{background:var(--surface);color:var(--muted);border:1px solid var(--hairline)} .btn.ghost:hover{color:var(--ink);border-color:var(--accent-line)}
+  .actions{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap}
+  .hint{font-size:12px;color:var(--faint);margin:8px 2px 0}
+  .pill{display:inline-block;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px}
+  .pill.admin{background:var(--crit-soft);color:var(--crit)} .pill.operator{background:var(--warn-soft);color:var(--warn)} .pill.monitor{background:var(--ok-soft);color:var(--ok)}
+  .tagchip{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11px;padding:2px 7px;border-radius:5px;background:var(--inset);color:var(--muted);border:1px solid var(--hairline);margin:1px 2px 1px 0}
+  .rm{appearance:none;border:1px solid var(--hairline);background:var(--surface);color:var(--muted);border-radius:7px;width:28px;height:28px;cursor:pointer} .rm:hover{color:var(--crit);border-color:var(--crit)}
+  .empty{color:var(--faint);font-size:13px;padding:18px;text-align:center}
+  .recip{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .recip .r{display:inline-flex;align-items:center;gap:8px;background:var(--inset);border:1px solid var(--hairline);border-radius:999px;padding:6px 8px 6px 13px;font-size:13px;font-family:"IBM Plex Mono",monospace}
+  .recip .r button{appearance:none;border:0;background:transparent;color:var(--faint);cursor:pointer;font-size:15px}
+  .chanlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin-bottom:20px;max-height:220px;overflow-y:auto;padding:2px}
+  .chanbtn{appearance:none;text-align:left;border:1px solid var(--hairline);background:var(--surface-2);border-radius:10px;padding:10px 11px;cursor:pointer;font:inherit;display:flex;flex-direction:column;gap:3px}
+  .chanbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+  .chanbtn .cnum{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint)} .chanbtn .cnm{font-size:13px;font-weight:600} .chanbtn .cst{font-size:11px}
+  .chanbtn.bad{border-color:var(--crit);background:color-mix(in srgb,var(--crit) 8%,var(--surface-2))} .st-off-cam{color:var(--crit);font-weight:600}
+  .snapwrap{position:relative;border:1px solid var(--hairline);border-radius:12px;overflow:hidden;background:#000;min-height:220px;display:flex;align-items:center;justify-content:center}
+  .snapwrap img{display:block;max-width:100%;height:auto}
+  .snapempty{color:var(--muted);font-size:13px;padding:44px 16px;text-align:center}
+  .st-on{color:var(--ok)} .st-off{color:var(--faint)}
+  .chanbtn .st-meta{color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .protob{display:flex;gap:10px;align-items:flex-start;margin-bottom:20px;padding:11px 14px;border-radius:10px;background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);font-size:13px}
+  .protob b{color:var(--warn)}
+  .steps{margin:0 0 16px;padding-left:20px;color:var(--muted);font-size:13.5px}
+  .steps li{margin:5px 0} .steps li b{color:var(--ink)}
+  code{font-family:"IBM Plex Mono",monospace;font-size:12px;background:var(--inset);border:1px solid var(--hairline);padding:1px 6px;border-radius:5px;color:var(--ink)}
+  .btn.tiny{padding:5px 11px;font-size:12.5px;text-decoration:none}
+
+  /* sistem view */
+  .alert{display:flex;gap:13px;align-items:flex-start;border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:16px}
+  .alert.crit{background:var(--crit-soft);border:1px solid color-mix(in srgb,var(--crit) 35%,transparent)}
+  .alert .ai{font-size:20px;flex:none}
+  .alert h3{margin:0 0 4px;font-size:15px} .alert p{margin:0;color:var(--muted);font-size:13.5px}
+  .alert .who{color:var(--crit);font-weight:700}
+  .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:14px;overflow:hidden}
+  .metric{background:var(--surface);padding:16px 14px;text-align:center}
+  .metric b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums} .metric span{font-size:12px;color:var(--muted);margin-top:4px;display:block}
+  .links{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+  .lk{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--hairline);border-radius:13px;padding:14px 16px;box-shadow:var(--shadow);text-decoration:none;color:inherit}
+  .lk:hover{border-color:var(--accent-line)} .lk .li{width:36px;height:36px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:17px;flex:none}
+  .lk .lt{font-weight:600;font-size:14px} .lk .ld{color:var(--muted);font-size:12px;font-family:"IBM Plex Mono",monospace}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px dashed var(--hairline);font-size:13.5px} .kv:first-of-type{border-top:none}
+  .kv .k{color:var(--muted)} .kv .v{font-weight:600}
+  .pend{display:grid;gap:10px}
+  .p{display:grid;grid-template-columns:auto 1fr;gap:13px;background:var(--surface);border:1px solid var(--hairline);border-left:3px solid var(--warn);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+  .p .pi{width:28px;height:28px;border-radius:8px;background:var(--warn-soft);color:var(--warn);display:grid;place-items:center;flex:none} .p h4{margin:0 0 2px;font-size:14px} .p p{margin:0;color:var(--muted);font-size:13px}
+  .commit{display:flex;align-items:baseline;gap:10px;padding:7px 0;border-top:1px dashed var(--hairline);font-size:13px} .commit:first-of-type{border-top:none}
+  .commit .h{font-family:"IBM Plex Mono",monospace;color:var(--accent);font-weight:600;font-size:12px} .commit .m{color:var(--muted)}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);font-size:13.5px;font-weight:500;padding:11px 18px;border-radius:10px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60}
+  .toast.show{opacity:1;transform:translateX(-50%)}
+  footer{margin-top:40px;padding-top:18px;border-top:1px solid var(--hairline);color:var(--faint);font-size:12.5px;display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between}
+  /* API entegrasyonu */
+  .apilist{display:flex;flex-direction:column;gap:6px}
+  .apirow{display:flex;align-items:center;gap:10px;padding:8px 11px;background:var(--surface-2);border:1px solid var(--hairline);border-radius:9px;font-size:12.5px}
+  .apirow .m{color:var(--ok);font-weight:700;font-size:10.5px;min-width:30px;letter-spacing:.03em}
+  .apirow .p{font-weight:600} .apirow .d{color:var(--muted);margin-left:auto;font-size:12px;white-space:nowrap}
+  .codeblk{background:var(--inset);border:1px solid var(--hairline);border-radius:9px;padding:11px 13px;font-size:12px;line-height:1.55;overflow-x:auto;color:var(--muted);white-space:pre;margin:0}
+  .keynew{margin-top:12px;padding:13px 15px;border:1px solid var(--ok);border-radius:11px;background:color-mix(in srgb,var(--ok) 9%,transparent);display:flex;flex-direction:column;gap:9px;font-size:13px}
+  .keynew code{word-break:break-all;font-size:12.5px;color:var(--text);background:var(--surface);padding:8px 10px;border-radius:7px;border:1px solid var(--hairline)}
+  /* Akışkanlık cilası */
+  .view:not([hidden]){animation:viewIn .34s cubic-bezier(.16,.8,.3,1)}
+  @keyframes viewIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  .btn{transition:transform .08s ease,background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease}
+  .btn:active{transform:translateY(1px)}
+  .devcard:active{transform:scale(.994)}
+  .dfchip:active{transform:scale(.985)}
+  .vtab{transition:color .15s ease,background .15s ease}
+  .rm{transition:background .12s ease,color .12s ease,border-color .12s ease}
+  .chanbtn{transition:border-color .14s ease,background .14s ease,transform .06s ease} .chanbtn:active{transform:scale(.99)}
+  /* Filo Özeti KPI şeridi */
+  .kpibar{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px}
+  .kpi{display:flex;align-items:center;gap:13px;background:var(--surface);border:1px solid var(--hairline);border-left:3px solid var(--ok);border-radius:14px;padding:13px 16px;box-shadow:inset 0 1px 0 var(--card-top),var(--shadow)}
+  .kpi.tone-warn{border-left-color:var(--warn)} .kpi.tone-crit{border-left-color:var(--crit)}
+  .kpi-ic{font-size:21px;line-height:1;flex:none}
+  .kpi b{font-size:21px;line-height:1.1;display:block} .kpi span{font-size:11.5px;color:var(--faint)}
+  /* Disk sıcaklık ısı-haritası */
+  .heatmap{display:flex;flex-direction:column;gap:8px}
+  .hrow{display:flex;align-items:center;gap:12px}
+  .hdev{min-width:98px;font-size:12.5px;font-weight:600;color:var(--muted);flex:none}
+  .hcells{display:flex;flex-wrap:wrap;gap:4px}
+  .hcell{width:34px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:rgba(255,255,255,.94);cursor:pointer;font-family:"IBM Plex Mono",monospace;transition:transform .1s ease;text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.16)}
+  .hcell:hover{transform:scale(1.14);z-index:2}
+  .hcell.bad{outline:2px solid var(--crit);outline-offset:-2px}
+  .hlegend{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:11.5px;color:var(--faint);flex-wrap:wrap}
+  .hgrad{width:130px;height:10px;border-radius:5px;background:linear-gradient(90deg,rgb(59,130,196),rgb(51,192,129),rgb(214,154,58),rgb(229,112,107))}
+  .hsep{width:1px;height:14px;background:var(--hairline);margin:0 4px}
+  /* Mobil */
+  @media (max-width:680px){
+    .wrap{padding:0 13px 48px}
+    .topnav{gap:8px;padding:10px 0}
+    .vtabs{width:100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch} .vtabs::-webkit-scrollbar{display:none}
+    .vtab{white-space:nowrap;padding:8px 12px}
+    .grid2{grid-template-columns:1fr!important}
+    .devgrid{grid-template-columns:1fr!important}
+    .metrics{grid-template-columns:repeat(2,1fr)!important}
+    .dfstats{grid-template-columns:repeat(2,1fr)!important}
+    .kpibar{grid-template-columns:repeat(2,1fr)!important}
+    .hdev{min-width:70px;font-size:11px} .hcell{width:30px;height:24px;font-size:10px}
+    .vhead h1{font-size:1.5rem}
+    .modal{border-radius:15px}
+    .frow{grid-template-columns:1fr!important}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<nav class="topnav">
+  <span class="brand">🖥️ Nöbetçi <span class="bsub">10.20.57.182</span></span>
+  <div class="vtabs" role="tablist" aria-label="Görünümler">
+    <button class="vtab" role="tab" data-view="izleme" aria-selected="true">İzleme</button>
+    <button class="vtab" role="tab" data-view="alarmlar" aria-selected="false">Alarmlar <span class="albadge" id="alBadge" hidden>0</span></button>
+    <button class="vtab" role="tab" data-view="yonetim" aria-selected="false">Yönetim</button>
+    <button class="vtab" role="tab" data-view="sistem" aria-selected="false">Sistem</button>
+  </div>
+  <div class="navright"><button class="toggle" id="themeBtn" type="button" aria-label="Tema">◐ tema</button><button class="toggle" id="logoutBtn" type="button" aria-label="Çıkış" style="margin-left:8px">⎋ çıkış</button></div>
+</nav>
+
+<div class="wrap">
+  <!-- ================= İZLEME ================= -->
+  <div class="view" id="view-izleme">
+    <div class="vhead"><h1>İzleme</h1><p>Filodaki NVR'ların canlı disk, RAID ve saklama sağlığı. Bir cihaza tıklayın → tüm detay açılır. Veriler 30 sn'de bir tazelenir.</p></div>
+    <section aria-label="Filo Özeti">
+      <div class="sec-head"><h2>Filo Özeti</h2><span class="rule"></span><span class="live-ind" id="liveInd"><span class="d pulse"></span><span id="liveTxt">bağlanıyor…</span></span></div>
+      <div class="kpibar" id="fleetKpi"></div>
+    </section>
+    <section aria-label="Cihazlar">
+      <div class="sec-head"><h2>İzlenen cihazlar</h2><span class="rule"></span><span class="count" id="devCount">0</span><button class="btn ghost tiny" id="addNvrBtn" type="button" style="margin-left:6px">＋ NVR ekle</button></div>
+      <div class="devgrid" id="deviceGrid"></div>
+    </section>
+    <section aria-label="Disk Sıcaklık Haritası">
+      <div class="sec-head"><h2>Disk Sıcaklık Haritası</h2><span class="rule"></span><span class="hint" style="margin:0">her hücre bir fiziksel disk · SMART</span></div>
+      <div class="heatmap" id="heatmap"></div>
+    </section>
+  </div>
+
+  <!-- ================= ALARMLAR ================= -->
+  <div class="view" id="view-alarmlar" hidden>
+    <div class="vhead"><h1>Alarmlar</h1><p>Filodaki tüm uyarı ve olayların geçmişi. Açık alarmları <b>gördüm</b> ile kapatabilirsiniz. 30 sn'de bir tazelenir.</p></div>
+    <section>
+      <div class="sec-head"><h2>Olay geçmişi</h2><span class="rule"></span><span class="count" id="alCount">0</span></div>
+      <div class="alfilters">
+        <div class="seg" id="alStatus"><label class="opt"><input type="radio" name="alstat" value="open" checked><span>Açık alarmlar</span></label><label class="opt"><input type="radio" name="alstat" value="all"><span>Tüm geçmiş</span></label></div>
+        <div class="seg" id="alSev"><label class="opt"><input type="radio" name="alsev" value="all" checked><span>Tümü</span></label><label class="opt"><input type="radio" name="alsev" value="high"><span>Yüksek+</span></label><label class="opt"><input type="radio" name="alsev" value="critical"><span>Kritik</span></label></div>
+      </div>
+      <div class="tablewrap"><table class="t"><thead><tr><th>Zaman</th><th>Önem</th><th>Cihaz</th><th>Olay</th><th>Mesaj</th><th style="text-align:right">İşlem</th></tr></thead><tbody id="alarmRows"></tbody></table></div>
+    </section>
+  </div>
+
+  <!-- ================= YÖNETİM ================= -->
+  <div class="view" id="view-yonetim" hidden>
+    <div class="vhead"><h1>Yönetim</h1><p>NVR kullanıcıları, alarm bildirimleri ve kamera ayarları.</p></div>
+    <div class="protob"><span>⚠</span><div><b>Tasarım önizlemesi.</b> Formlar bu sayfada çalışır (önizleme); cihaza yazma / SMTP devreye alma arka-uç bağlantısı ister. <b>Girdiğiniz parolalar tarayıcıdan çıkmaz.</b></div></div>
+    <div class="mtabs" role="tablist" aria-label="Yönetim bölümleri">
+      <button class="mtab" role="tab" aria-controls="m-devices" aria-selected="true">🖧 Cihazlar</button>
+      <button class="mtab" role="tab" aria-controls="m-users" aria-selected="false">👤 Kullanıcılar</button>
+      <button class="mtab" role="tab" aria-controls="m-alerts" aria-selected="false">🔔 Bildirimler</button>
+      <button class="mtab" role="tab" aria-controls="m-cams" aria-selected="false">🎥 Kameralar</button>
+    </div>
+
+    <div class="mpanel" id="m-devices">
+      <div class="grid2">
+        <div class="card"><h3 id="addFormTitle"><span class="ic" style="background:var(--accent)"></span>Yeni NVR ekle</h3>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 14px">Sadece <b>ad · IP · kullanıcı · parola</b> girip <b>＋ Cihazı ekle</b>'ye basın — yeter. Sistem kaydederken cihaza bağlanıp <b>http/https, port, kanal sayısını kendisi bulur</b> ve RAID/disk verisini otomatik getirir (Tespit et'e basmanız <b>gerekmez</b>; port/HTTPS boş kalabilir). Parola <span class="mono">Fernet</span> ile şifreli saklanır; <b>~1 dk içinde restart'sız</b> izlemeye alınır.</p>
+          <form method="post" action="devices" id="addNvrForm">
+            <input type="hidden" name="cfg_id" id="editCfgId" value="">
+            <div class="frow">
+              <label class="f"><span>Ad <span class="req">*</span></span><input type="text" name="name" required placeholder="ör. depo-nvr" autocomplete="off"></label>
+              <label class="f"><span>IP / host <span class="req">*</span></span><input type="text" name="host" required placeholder="10.20.57.x" autocomplete="off"></label>
+            </div>
+            <div class="frow">
+              <label class="f"><span>Kullanıcı</span><input type="text" name="username" value="monitor" autocomplete="off"></label>
+              <label class="f"><span>Parola <span class="req">*</span></span><input type="password" name="password" required autocomplete="new-password"></label>
+            </div>
+            <div class="actions" style="margin:2px 0 14px"><button type="button" class="btn ghost" id="probeBtn">🔍 Tespit et <span style="opacity:.6">(opsiyonel — önizleme)</span></button></div>
+            <div class="hint" id="probeResult" style="margin-bottom:12px">Port/HTTPS/kanal kaydederken otomatik bulunur. Tespit et yalnızca önizleme içindir; elle de düzenleyebilirsiniz.</div>
+            <div class="frow">
+              <label class="f"><span>Port</span><input type="number" name="port" placeholder="443 / 80"></label>
+              <label class="f"><span>Maks. kanal</span><input type="number" name="max_channels" value="32"></label>
+            </div>
+            <label class="chk on"><input type="checkbox" name="https" value="true" checked> HTTPS (yeni firmware)</label>
+            <label class="chk"><input type="checkbox" name="overwrite" value="true"> Döngüsel kayıt (doluluk alarmı kapalı)</label>
+            <div class="actions" style="margin-top:14px"><button type="submit" class="btn primary" id="addSubmitBtn">＋ Cihazı ekle</button><button type="button" class="btn ghost" id="cancelEditBtn" hidden>İptal</button></div>
+          </form>
+        </div>
+        <div class="card"><h3><span class="ic" style="background:var(--ok)"></span>Mevcut cihazlar</h3>
+          <div class="tablewrap"><table class="t"><thead><tr><th>Cihaz</th><th>IP</th><th>Durum</th><th style="text-align:right">İşlem</th></tr></thead><tbody id="devMgmtList"></tbody></table></div>
+          <p class="hint"><b>✎ Düzelt</b> soldaki formu o cihazın değerleriyle doldurur (parolayı tekrar girin) · <b>✕ Sil</b> cihazı kaldırır. Değişiklik ~1 dk'da restart'sız uygulanır.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px"><h3><span class="ic" style="background:var(--accent2)"></span>Subnet Tarama · Toplu Ekleme</h3>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 14px">Bir IP aralığı verin; sistem açık web portu olan Dahua NVR'ları bulur (host başına <b>tek deneme</b> — lockout-güvenli). Bulunanları seçip topluca ekleyin. <b>Doğru ortak parolayı</b> girin — yanlış parola çok sayıda cihazda başarısız girişe yol açar.</p>
+        <div class="frow" style="grid-template-columns:1.5fr 1fr 1fr auto;align-items:end">
+          <label class="f" style="margin:0"><span>IP aralığı</span><input type="text" id="scanCidr" placeholder="10.20.56.0/24 ya da 10.20.56.1-254"></label>
+          <label class="f" style="margin:0"><span>Kullanıcı</span><input type="text" id="scanUser" value="admin" autocomplete="off"></label>
+          <label class="f" style="margin:0"><span>Parola</span><input type="password" id="scanPass" autocomplete="new-password"></label>
+          <button class="btn primary" id="scanBtn" type="button">🔍 Tara</button>
+        </div>
+        <div id="scanStatus" class="hint" style="margin-top:12px"></div>
+        <div id="scanResults"></div>
+      </div>
+    </div>
+
+    <div class="mpanel" id="m-users" hidden>
+      <div class="grid2">
+        <div class="card"><h3><span class="ic" style="background:var(--accent)"></span>Yeni kullanıcı</h3>
+          <form id="userForm">
+            <div class="frow">
+              <label class="f"><span>Kullanıcı adı <span class="req">*</span></span><input type="text" id="u-name" autocomplete="off" placeholder="ör. operator1"></label>
+              <label class="f"><span>Rol</span><select id="u-role"><option value="monitor">Salt-izleme</option><option value="operator">Operatör</option><option value="admin">Yönetici</option></select></label>
+            </div>
+            <div class="frow">
+              <label class="f"><span>Parola <span class="req">*</span></span><input type="password" id="u-pass" autocomplete="new-password" placeholder="••••••••"></label>
+              <label class="f"><span>Parola (tekrar)</span><input type="password" id="u-pass2" autocomplete="new-password" placeholder="••••••••"></label>
+            </div>
+            <label class="f"><span>Aktif olduğu cihazlar</span></label><div class="checks" id="u-devices"></div>
+            <label class="f" style="margin-top:14px"><span>Yetkiler</span></label><div class="checks" id="u-perms"></div>
+            <div class="actions"><button type="submit" class="btn primary">＋ Kullanıcı oluştur</button><button type="reset" class="btn ghost">Temizle</button></div>
+          </form>
+        </div>
+        <div class="card"><h3><span class="ic" style="background:var(--ok)"></span>Tanımlı kullanıcılar</h3>
+          <div class="tablewrap"><table class="t"><thead><tr><th>Kullanıcı</th><th>Rol</th><th>Cihazlar</th><th></th></tr></thead><tbody id="userRows"></tbody></table></div>
+          <p class="hint"><span class="mono">admin</span>/<span class="mono">default</span> cihazın yerleşik hesaplarıdır, buradan yönetilmez.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mpanel" id="m-alerts" hidden>
+      <div class="grid2">
+        <div class="card"><h3><span class="ic" style="background:var(--accent)"></span>Alarm e-postaları</h3>
+          <label class="f"><span>Alıcı ekle</span><div class="frow" style="grid-template-columns:1fr auto"><input type="email" id="mailInput" placeholder="bt-ekibi@sirket.com"><button type="button" class="btn ghost" id="mailAdd">＋ Ekle</button></div></label>
+          <div class="recip" id="recipList"></div>
+          <label class="f"><span>Hangi önem düzeyinde</span></label>
+          <div class="seg"><label class="opt"><input type="radio" name="sev" value="critical"><span>Yalnız kritik</span></label><label class="opt"><input type="radio" name="sev" value="high" checked><span>Yüksek ve üstü</span></label><label class="opt"><input type="radio" name="sev" value="all"><span>Tümü</span></label></div>
+          <div class="actions" style="margin-top:16px"><button type="button" class="btn primary" id="saveAlerts">Kaydet</button><button type="button" class="btn ghost" id="testMail">✈ Test</button></div>
+          <p class="hint">collector'ın <span class="mono">alerting.email</span> yapılandırmasına karşılık gelir.</p>
+        </div>
+        <div class="card"><h3><span class="ic" style="background:var(--muted)"></span>SMTP sunucusu</h3>
+          <div class="frow"><label class="f"><span>Sunucu</span><input type="text" id="smtpHost" placeholder="mail.sirket.local"></label><label class="f"><span>Port</span><input type="number" id="smtpPort" value="587"></label></div>
+          <label class="chk on" style="margin-bottom:12px"><input type="checkbox" id="smtpTls" checked> STARTTLS</label>
+          <div class="frow"><label class="f"><span>Kullanıcı</span><input type="text" id="smtpUser" placeholder="monitor@sirket.com" autocomplete="off"></label><label class="f"><span>Parola</span><input type="password" id="smtpPass" placeholder="••••••••" autocomplete="new-password"></label></div>
+          <label class="f"><span>Gönderen</span><input type="text" id="smtpFrom" placeholder="monitor@sirket.com"></label>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px"><h3><span class="ic" style="background:#229ED9"></span>Telegram bildirimleri</h3>
+        <p class="hint" style="margin:0 0 14px"><b>@BotFather</b>'a <span class="mono">/newbot</span> ile bot açıp <b>token</b>'ı, <b>@userinfobot</b>'tan da <b>Chat ID</b>'ni al. collector'ın <span class="mono">alerting.telegram</span> yapılandırmasına karşılık gelir.</p>
+        <label class="chk" style="margin-bottom:12px" id="tgEnableWrap"><input type="checkbox" id="tgEnable"> Telegram bildirimlerini etkinleştir</label>
+        <div class="frow"><label class="f"><span>Bot token</span><input type="password" id="tgToken" placeholder="123456789:AA…" autocomplete="off"></label><label class="f"><span>Chat ID</span><input type="text" id="tgChat" placeholder="ör. -1001234567890" autocomplete="off"></label></div>
+        <label class="f"><span>Hangi önem düzeyinde</span></label>
+        <div class="seg"><label class="opt"><input type="radio" name="tgsev" value="critical"><span>Yalnız kritik</span></label><label class="opt"><input type="radio" name="tgsev" value="high" checked><span>Yüksek ve üstü</span></label><label class="opt"><input type="radio" name="tgsev" value="all"><span>Tümü</span></label></div>
+        <div class="actions" style="margin-top:16px"><button type="button" class="btn primary" id="tgSave">Kaydet</button><button type="button" class="btn ghost" id="tgTest">✈ Test mesajı</button></div>
+        <p class="hint">Token yalnızca <span class="mono">.env</span>'e (şifreli) yazılır; panelde/log'da düz metin tutulmaz.</p>
+      </div>
+    </div>
+
+    <div class="mpanel" id="m-cams" hidden>
+      <div class="card"><h3><span class="ic" style="background:var(--accent)"></span>Kamera / kanal ayarları</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin-bottom:16px">
+          <label class="f" style="margin:0;min-width:220px"><span>Cihaz</span><select id="camDevice"></select></label>
+          <div style="color:var(--muted);font-size:13px" id="chanSummary"></div>
+        </div>
+        <div class="chanlist" id="chanList"></div>
+        <h4 style="margin:18px 2px 10px" id="camDetailTitle">Kanal detayı</h4>
+        <div class="grid2">
+          <div>
+            <div class="kv"><span class="k">Kamera adı</span><span class="v" id="cd-name">—</span></div>
+            <div class="kv"><span class="k">Çözünürlük</span><span class="v tnum" id="cd-res">—</span></div>
+            <div class="kv"><span class="k">Kodlama (codec)</span><span class="v" id="cd-codec">—</span></div>
+          </div>
+          <div>
+            <div class="kv"><span class="k">Bit hızı</span><span class="v tnum" id="cd-bitrate">—</span></div>
+            <div class="kv"><span class="k">Kare hızı</span><span class="v tnum" id="cd-fps">—</span></div>
+            <div class="kv"><span class="k">Bit hızı kontrolü</span><span class="v" id="cd-brc">—</span></div>
+          </div>
+        </div>
+        <p class="hint">Ana akış (MainFormat) değerleri cihazdan <b>canlı</b> okunur. Bu sürüm salt-görüntüleme — düzenleme cihaza yazma (admin) gerektirir.</p>
+        <h4 style="margin:18px 2px 10px">Canlı görüntü <button class="btn ghost tiny" id="snapRefresh" type="button" style="margin-left:8px">🔄 Yenile</button></h4>
+        <div class="snapwrap"><div class="snapempty" id="snapEmpty">Bir kanal seçin — anlık kare burada gösterilir.</div><img id="snapImg" alt="Canlı kamera görüntüsü" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SİSTEM ================= -->
+  <div class="view" id="view-sistem" hidden>
+    <div class="vhead"><h1>Sistem</h1><p>Nöbetçi — Dahua NVR filo izleme platformu. Filo raporu, genel durum, erişim ve güvenlik.</p></div>
+
+    <section>
+      <div class="sec-head"><h2>Filo Raporu</h2><span class="rule"></span><span class="hint" id="fleetSummary" style="margin:0 10px 0 0"></span><button class="btn ghost tiny" id="csvBtn" type="button">⬇ CSV indir</button></div>
+      <div class="tablewrap"><table class="t"><thead><tr><th>Cihaz</th><th>IP</th><th>Model</th><th>Sağlık</th><th>Durum</th><th>Kapasite</th><th>Doluluk</th><th>RAID</th><th>Disk</th><th>Saklama</th><th>Kamera</th><th>Disk SMART</th></tr></thead><tbody id="fleetRows"></tbody></table></div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>API Entegrasyonu</h2><span class="rule"></span><a class="btn ghost tiny" href="docs" target="_blank" rel="noopener">📖 API Dokümanı (Swagger)</a></div>
+      <div class="grid2">
+        <div class="card"><h3><span class="ic" style="background:var(--accent)"></span>API anahtarları</h3>
+          <p class="hint" style="margin:0 0 14px">Gelecekteki entegrasyonlar için salt-okunur <span class="mono">/api/v1</span> erişimi. Anahtar <span class="mono">X-API-Key</span> başlığıyla kullanılır ve <b>yalnızca üretildiğinde bir kez</b> gösterilir (karması saklanır).</p>
+          <div class="frow" style="grid-template-columns:1fr auto;align-items:end"><label class="f" style="margin:0"><span>Anahtar adı</span><input type="text" id="keyName" placeholder="ör. grafana, mobil-uygulama"></label><button class="btn primary" id="keyCreate" type="button">＋ Üret</button></div>
+          <div id="keyResult"></div>
+          <div class="tablewrap" style="margin-top:14px"><table class="t"><thead><tr><th>Ad</th><th>Oluşturuldu</th><th>Son kullanım</th><th style="text-align:right">İşlem</th></tr></thead><tbody id="keyRows"></tbody></table></div>
+        </div>
+        <div class="card"><h3><span class="ic" style="background:var(--ok)"></span>Uç noktalar · v1</h3>
+          <div class="apilist">
+            <div class="apirow"><span class="m mono">GET</span><span class="p mono">/api/v1/fleet</span><span class="d">filo özeti</span></div>
+            <div class="apirow"><span class="m mono">GET</span><span class="p mono">/api/v1/devices</span><span class="d">tüm cihazlar</span></div>
+            <div class="apirow"><span class="m mono">GET</span><span class="p mono">/api/v1/devices/{ad}</span><span class="d">tek cihaz</span></div>
+            <div class="apirow"><span class="m mono">GET</span><span class="p mono">/api/v1/devices/{ad}/smart</span><span class="d">disk SMART</span></div>
+            <div class="apirow"><span class="m mono">GET</span><span class="p mono">/api/v1/alarms</span><span class="d">alarmlar</span></div>
+            <div class="apirow"><span class="m mono">GET</span><span class="p mono">/api/v1/ping</span><span class="d">bağlantı testi</span></div>
+          </div>
+          <p class="hint" style="margin:12px 0 6px">Örnek istek:</p>
+          <pre class="codeblk mono">curl -H "X-API-Key: nk_…" \
+  http://10.20.57.182:8000/api/v1/fleet</pre>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Active Directory (Domain Girişi)</h2><span class="rule"></span></div>
+      <div class="card">
+        <p class="hint" style="margin:0 0 14px">Etkinleştirilince kullanıcılar <b>domain hesaplarıyla</b> panele girer (LDAP/AD bind). Yerel <span class="mono">admin</span> parolası her zaman yedek olarak çalışır. Parola saklanmaz; her girişte AD'ye doğrulanır.</p>
+        <label class="chk" id="adEnableWrap" style="margin-bottom:14px"><input type="checkbox" id="adEnabled"> Domain (AD) girişini etkinleştir</label>
+        <div class="frow"><label class="f"><span>AD sunucusu</span><input type="text" id="adServer" placeholder="ldaps://dc.sirket.local"></label><label class="f"><span>Domain</span><input type="text" id="adDomain" placeholder="sirket.local"></label></div>
+        <div class="frow"><label class="f"><span>Base DN (grup kısıtı için)</span><input type="text" id="adBaseDn" placeholder="DC=sirket,DC=local"></label><label class="f"><span>İzinli grup (opsiyonel)</span><input type="text" id="adGroup" placeholder="Nobetci-Yoneticiler"></label></div>
+        <div class="actions" style="margin-top:12px"><button class="btn primary" id="adSave" type="button">Kaydet</button></div>
+        <h4 style="margin:20px 2px 10px">Bağlantı testi</h4>
+        <p class="hint" style="margin:0 0 10px">Yukarıdaki ayarlarla bir domain hesabını dener (kaydetmeye gerek yok).</p>
+        <div class="frow" style="grid-template-columns:1fr 1fr auto;align-items:end">
+          <label class="f" style="margin:0"><span>Test kullanıcı</span><input type="text" id="adTestUser" placeholder="ör. aziz" autocomplete="off"></label>
+          <label class="f" style="margin:0"><span>Test parola</span><input type="password" id="adTestPass" autocomplete="new-password"></label>
+          <button class="btn ghost" id="adTest" type="button">✔ Test et</button>
+        </div>
+        <div id="adTestResult" class="hint" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Saat / NTP eşitleme</h2><span class="rule"></span></div>
+      <div class="card">
+        <p class="hint" style="margin:0 0 14px">Cihaz saati yanlış olursa kayıt tarihleri ve saklama süresi hatalı görünür (ör. saat 2000'e düşerse "26 yıl saklama"). <b>Saatleri eşitle</b> tüm erişilebilir NVR'lara <b>anında doğru saati</b> (UTC+3) yazar; ortak NTP sunucusu tanımlarsan sürekli senkron için NTP'yi de açar. Kameralar NVR'ın arkasında olduğundan saatlerini NVR üzerinden alır.</p>
+        <div class="frow" style="grid-template-columns:2fr 1fr 1fr"><label class="f"><span>Ortak NTP sunucusu (ops.)</span><input type="text" id="ntpServer" placeholder="ör. 10.20.57.1 / dc.sirket.local"></label><label class="f"><span>Port</span><input type="number" id="ntpPort" value="123"></label><label class="f"><span>Saat dilimi (UTC+)</span><input type="number" id="ntpTz" value="3"></label></div>
+        <div class="actions" style="margin-top:12px"><button class="btn ghost" id="ntpSave" type="button">NTP ayarını kaydet</button><button class="btn primary" id="syncAllBtn" type="button">🕐 Tüm saatleri eşitle</button></div>
+        <div id="ntpResult" class="hint" style="margin-top:12px"></div>
+      </div>
+    </section>
+
+    <div class="alert crit" id="secAlert" hidden>
+      <span class="ai">🔐</span>
+      <div><h3>Açık güvenlik uyarısı — yetkisiz giriş</h3>
+        <p>Allowlist dışı <span class="who mono">10.20.54.172</span> adresinden <b>admin</b> girişi tespit edildi (Local + DVRIP). Bu kaynak yetkiliyse allowlist'e eklenmeli; değilse araştırılmalı.</p></div>
+    </div>
+
+    <section><div class="sec-head"><h2>Genel durum</h2><span class="rule"></span><span class="live-ind" id="sysLive"><span class="d pulse"></span><span id="sysLiveTxt">…</span></span></div>
+      <div class="metrics">
+        <div class="metric"><b class="tnum">4/4</b><span>servis</span></div>
+        <div class="metric"><b class="tnum" id="mDev">1</b><span>izlenen cihaz</span></div>
+        <div class="metric"><b class="tnum" id="mFill">—</b><span>doluluk</span></div>
+        <div class="metric"><b class="tnum" id="mDisk">8/8</b><span>disk sağlıklı</span></div>
+        <div class="metric"><b class="tnum">28</b><span>test geçti</span></div>
+        <div class="metric"><b class="tnum" id="mAlarm">1</b><span>açık alarm</span></div>
+      </div>
+    </section>
+
+    <section><div class="sec-head"><h2>Erişim</h2><span class="rule"></span></div>
+      <div class="links">
+        <a class="lk" href="http://10.20.57.182:8000" target="_blank" rel="noopener"><span class="li">🧭</span><div><div class="lt">Panel</div><div class="ld">:8000 · cihaz yönetimi</div></div></a>
+        <a class="lk" href="http://10.20.57.182:3001" target="_blank" rel="noopener"><span class="li">📈</span><div><div class="lt">Grafana</div><div class="ld">:3001 · panolar</div></div></a>
+        <a class="lk" href="#" id="lkIzleme"><span class="li">📊</span><div><div class="lt">İzleme panosu</div><div class="ld">canlı sağlık</div></div></a>
+        <a class="lk" href="#" id="lkYonetim"><span class="li">⚙️</span><div><div class="lt">Yönetim</div><div class="ld">kullanıcı · kamera</div></div></a>
+      </div>
+    </section>
+
+    <div class="grid2">
+      <section style="margin-top:26px"><div class="sec-head"><h2>Neler çalışıyor</h2><span class="rule"></span></div>
+        <div class="card">
+          <div class="kv"><span class="k">İzleme (poll + anlık olay)</span><span class="v tag-ok">aktif</span></div>
+          <div class="kv"><span class="k">Disk / RAID sağlığı (CGI + RPC2)</span><span class="v tag-ok">aktif</span></div>
+          <div class="kv"><span class="k">Saklama derinliği takibi</span><span class="v tag-ok">aktif</span></div>
+          <div class="kv"><span class="k">Yetkisiz giriş tespiti</span><span class="v tag-ok">aktif</span></div>
+          <div class="kv"><span class="k">Canlı pano + öngörü</span><span class="v tag-ok">aktif</span></div>
+          <div class="kv"><span class="k">Alarm kanalı</span><span class="v">log + event</span></div>
+          <div class="kv"><span class="k">Kalıcılık (restart)</span><span class="v tag-ok">unless-stopped</span></div>
+        </div>
+      </section>
+      <section style="margin-top:26px"><div class="sec-head"><h2>Bekleyen işler</h2><span class="rule"></span></div>
+        <div class="pend">
+          <div class="p"><div class="pi">🔐</div><div><h4>10.20.54.172 kararı</h4><p>Yetkili mi? Allowlist'e ekle ya da araştır.</p></div></div>
+          <div class="p"><div class="pi">📨</div><div><h4>SMTP e-posta</h4><p>Sunucu + alıcı verilince alarm e-postası devreye alınır.</p></div></div>
+          <div class="p"><div class="pi">⬆️</div><div><h4>GitHub push</h4><p>6 commit sunucuda; yazma kimliği + dal birleştirme gerekiyor.</p></div></div>
+          <div class="p"><div class="pi">➕</div><div><h4>Diğer NVR'lar</h4><p>IP listesi eklenecek; grid otomatik büyür.</p></div></div>
+        </div>
+      </section>
+    </div>
+
+    <section><div class="sec-head"><h2>Bu oturumun commit'leri</h2><span class="rule"></span></div>
+      <div class="card">
+        <div class="commit"><span class="h">67920e9</span><span class="m">Denetim düzeltmeleri: log gürültüsü, retention, log rotasyonu</span></div>
+        <div class="commit"><span class="h">e013e3d</span><span class="m">Canlı pano + yönetim/proje; altyapı compose'a alındı</span></div>
+        <div class="commit"><span class="h">423f621</span><span class="m">Faz 3: Yetkisiz giriş tespiti</span></div>
+        <div class="commit"><span class="h">25976eb</span><span class="m">RPC2 oturum düşüşte yeniden giriş</span></div>
+        <div class="commit"><span class="h">0cb364c</span><span class="m">RPC2 disk/RAID sağlık entegrasyonu</span></div>
+        <div class="commit"><span class="h">811d4ca</span><span class="m">Faz 0: RAID-tek cihazda disk kapasitesi</span></div>
+      </div>
+    </section>
+  </div>
+
+  <footer><span>Nöbetçi · Dahua NVR filo izleme</span><span class="mono">10.20.57.182 · tek sayfa kontrol merkezi</span></footer>
+</div>
+
+<div class="backdrop" id="backdrop" role="dialog" aria-modal="true"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const $ = id => document.getElementById(id);
+  let toastT; function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
+
+  // ---- ana görünüm sekmeleri ----
+  const vtabs=[...document.querySelectorAll(".vtab")];
+  function showView(v){
+    vtabs.forEach(t=>t.setAttribute("aria-selected", t.dataset.view===v));
+    ["izleme","alarmlar","yonetim","sistem"].forEach(x=>$("view-"+x).hidden = x!==v);
+    if(v==="sistem") syncSystem();
+    if(v==="alarmlar") loadAlarms();
+  }
+  // ---- Alarm panosu ----
+  let ALARM_STAT="open", ALARM_SEV="all";
+  const SEV_LABEL={critical:"Kritik",high:"Yüksek",warning:"Uyarı",info:"Bilgi"};
+  function updateAlBadge(n){_openAlarms=n||0;const b=$("alBadge"); if(b){if(n>0){b.textContent=n;b.hidden=false;}else{b.hidden=true;}} const v=$("view-izleme"); if($("fleetKpi")&&v&&!v.hidden)renderKpi(merged());}
+  async function refreshAlBadge(){try{const r=await fetch("api/events?status=open&limit=1",{cache:"no-store"});const j=await r.json();updateAlBadge(j.open_count||0);}catch(e){}}
+  async function loadAlarms(){
+    try{
+      const r=await fetch(`api/events?status=${ALARM_STAT}&severity=${ALARM_SEV}&limit=300`,{cache:"no-store"});
+      const j=await r.json(); renderAlarms(j.events||[]); updateAlBadge(j.open_count||0);
+    }catch(e){ const tb=$("alarmRows"); if(tb)tb.innerHTML=`<tr><td colspan="6" class="empty">Alarmlar yüklenemedi.</td></tr>`; }
+  }
+  function renderAlarms(events){
+    const tb=$("alarmRows"); if(!tb)return;
+    if($("alCount"))$("alCount").textContent=events.length;
+    if(!events.length){ tb.innerHTML=`<tr><td colspan="6" class="empty">${ALARM_STAT==="open"?"Açık alarm yok — her şey yolunda. ✓":"Kayıt yok."}</td></tr>`; return; }
+    tb.innerHTML=events.map(e=>{
+      const recovered=e.code==="Recovered"||e.severity==="info";
+      const act=(recovered||e.acked_by)?(e.acked_by?`<span class="tag-ok" title="${esc(e.acked_by)}">✓ görüldü</span>`:''):`<button class="rm" data-ack="${e.id}">gördüm</button>`;
+      return `<tr><td class="mono" style="white-space:nowrap;color:var(--muted)">${esc(e.ts)}</td><td><span class="sevpill sev-${esc(e.severity)}">${SEV_LABEL[e.severity]||esc(e.severity)}</span></td><td style="font-weight:600">${esc(e.device)}</td><td class="mono" style="font-size:12px">${esc(e.code)}</td><td style="max-width:36ch">${esc(e.message)}</td><td style="text-align:right;white-space:nowrap">${act}</td></tr>`;
+    }).join("");
+    tb.querySelectorAll("[data-ack]").forEach(b=>b.addEventListener("click",()=>ackAlarm(b.dataset.ack)));
+  }
+  async function ackAlarm(id){try{await fetch("api/alarms/"+id+"/ack",{method:"POST"});toast("Alarm görüldü olarak işaretlendi");loadAlarms();}catch(e){toast("İşaretlenemedi");}}
+  document.querySelectorAll('input[name=alstat]').forEach(i=>i.addEventListener("change",e=>{ALARM_STAT=e.target.value;loadAlarms();}));
+  document.querySelectorAll('input[name=alsev]').forEach(i=>i.addEventListener("change",e=>{ALARM_SEV=e.target.value;loadAlarms();}));
+  vtabs.forEach(t=>t.addEventListener("click",()=>showView(t.dataset.view)));
+  $("lkIzleme") && $("lkIzleme").addEventListener("click",e=>{e.preventDefault();showView("izleme");});
+  $("lkYonetim") && $("lkYonetim").addEventListener("click",e=>{e.preventDefault();showView("yonetim");});
+  $("addNvrBtn") && $("addNvrBtn").addEventListener("click",()=>showView("yonetim"));
+
+  // ================= İZLEME =================
+  const BASE = [{
+    id:"shgm-nvr", name:"shgm-nvr", host:"10.20.57.142", model:"DHI-NVR5832-EI", fw:"5.001…R",
+    reachable:true, latency:600, paths:"CGI + RPC2",
+    capacity:{total:"55.4 TB", totalTB:55.4, used:"1.45 TB", usedPct:2.61},
+    raid:{level:"RAID 5", state:"active", working:8, failed:0, spare:0, total:8},
+    retention:{days:209, below:false},
+    disks:[{name:"/dev/sda",member:1,ok:true},{name:"/dev/sdb",member:2,ok:true},{name:"/dev/sdc",member:3,ok:true},{name:"/dev/sdd",member:4,ok:true},{name:"/dev/sde",member:5,ok:true},{name:"/dev/sdf",member:6,ok:true},{name:"/dev/sdg",member:7,ok:true},{name:"/dev/sdh",member:8,ok:true}],
+    users:[{ip:"10.20.56.30",user:"admin",types:["Local","DVRIP"],since:"26 Ağu 2026 · 13:08"},{ip:"10.20.57.180",user:"admin",types:["Local","DVRIP"],since:"31 Ağu 2026 · 10:44"},{ip:"10.20.57.182",user:"admin",types:["CGI · izleme"],since:"1 Eyl 2026 · 09:59",self:true},{ip:"Yerel konsol",user:"default",types:["GUI"],since:"22 Nis 2026"}]
+  }];
+  let LAST_API=[], connState="init", lastOk=0, curOpenId=null, lastFocus=null;
+
+  function spark(vals,tone){ if(!vals||vals.length<2) return "";
+    const w=120,h=26,p=3,mn=Math.min(...vals),mx=Math.max(...vals),rng=(mx-mn)||1;
+    const pts=vals.map((v,i)=>{const x=p+i*(w-2*p)/(vals.length-1);const y=h-p-((v-mn)/rng)*(h-2*p);return x.toFixed(1)+","+y.toFixed(1);});
+    const last=pts[pts.length-1].split(",");
+    return `<svg class="spark ${tone||''}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts.join(' ')}"></polyline><circle cx="${last[0]}" cy="${last[1]}" r="2.2"></circle></svg>`;
+  }
+  function linSlope(v){const n=v.length;if(n<2)return 0;let sx=0,sy=0,sxy=0,sxx=0;v.forEach((y,x)=>{sx+=x;sy+=y;sxy+=x*y;sxx+=x*x;});const d=n*sxx-sx*sx;return d?(n*sxy-sx*sy)/d:0;}
+  function gunLabel(days){return days>=365?"≥ 1 yıl":"≈ "+Math.round(days)+" gün";}
+  function forecast(d){const out={};const fh=d.fillHist||[];
+    if(fh.length>=3&&d.capacity){const ph=linSlope(fh);if(ph>0.002){const days=(100-d.capacity.usedPct)/ph/24;out.cap={txt:gunLabel(days)+" sonra dolar",tone:days>=365?"ok":days>=30?"warn":"crit"};}else out.cap={txt:"stabil — doluluk artışı yok",tone:"ok"};}else out.cap={txt:"veri birikiyor",tone:"muted"};
+    const rh=d.retHist||[];
+    if(rh.length>=3&&d.retention){const pd=linSlope(rh);if(pd<-0.05){if(d.minRetention){const days=(d.retention.days-d.minRetention)/(-pd);out.ret=days<=0?{txt:d.minRetention+"g SLA altında!",tone:"crit"}:{txt:gunLabel(days)+" sonra "+d.minRetention+"g SLA altına",tone:days<14?"crit":"warn"};}else out.ret={txt:"azalıyor (SLA tanımlı değil)",tone:"warn"};}else out.ret={txt:pd>0.05?"artıyor — risk yok":"stabil",tone:"ok"};}else out.ret={txt:"veri birikiyor",tone:"muted"};
+    return out;}
+  function health(d){if(!d.reachable)return{score:0,label:"Erişilemiyor",tone:"crit"};let s=100;if(d.raid){if(d.raid.failed>0)s-=40;if(d.raid.state==="rebuilding")s-=15;if(d.raid.state==="degraded")s-=30;}if(d.capacity){if(d.capacity.usedPct>90)s-=25;else if(d.capacity.usedPct>80)s-=10;}if(d.retention&&d.retention.below)s-=10;if(d.cameras&&d.cameras.offline>0)s-=Math.min(25,d.cameras.offline*5);s=Math.max(0,Math.min(100,Math.round(s)));const tone=s>=90?"ok":s>=60?"warn":"crit";return{score:s,label:s>=90?"Sağlıklı":s>=60?"Uyarı":"Kritik",tone};}
+  // --- Disk sağlığı işleme: RAID redundans marjı + sağlık skoru ----------
+  function raidTolerance(level, levelNum, total, spare){
+    const L=(levelNum!=null?String(levelNum):String(level||"")).toUpperCase();
+    let base;
+    if(L.includes("6")) base=2;
+    else if(L.includes("10")||L.includes("50")) base=1;
+    else if(L.includes("5")) base=1;
+    else if(L.includes("1")) base=(total?Math.max(1,total-1):1);
+    else if(L.includes("0")) base=0;
+    else base=null;
+    return base==null?null:base+(spare||0);
+  }
+  function diskHealth(d){
+    const r=d.raid; if(!r||r.working==null) return null;
+    const failed=r.failed||0, tol=raidTolerance(r.level,r.levelNum,r.total,r.spare);
+    const margin=(tol!=null)?tol-failed:null;
+    let status,tone;
+    if(r.state==="failed"||(margin!=null&&margin<0)){status="Kritik — dizi arızalı";tone="crit";}
+    else if(failed>0){status="Kritik — disk arızası";tone="crit";}
+    else if(r.state==="degraded"){status="Kritik — bozulmuş dizi";tone="crit";}
+    else if(r.state==="rebuilding"){status="Yeniden yapılandırılıyor";tone="warn";}
+    else if(margin!=null&&margin===0){status="Uyarı — koruma marjı yok";tone="warn";}
+    else{status="Sağlıklı";tone="ok";}
+    let detail;
+    if(tol!=null){
+      detail = failed>0
+        ? (margin<0?`${failed} disk arızalı · REDUNDANS AŞILDI — VERİ RİSKİ`:`${failed} disk arızalı · ${margin} disk arızasına daha dayanır`)
+        : `${tol} disk arızasına kadar dayanıklı${r.spare?` (${r.spare} yedek dahil)`:''} · koruma marjı tam`;
+    } else detail = `${r.working}/${r.total} disk çalışıyor`;
+    return {status,tone,tol,margin,failed,detail,working:r.working,total:r.total,spare:r.spare,level:r.level,rebuild:r.rebuild_pct};
+  }
+  function fleetDiskHealth(list){
+    let disks=0,working=0,failed=0,arrays=0,healthy=0,risk=0;
+    list.forEach(d=>{const h=diskHealth(d); if(!h)return; arrays++; disks+=h.total||0; working+=h.working||0; failed+=h.failed||0; (h.tone==="ok")?healthy++:risk++;});
+    return {disks,working,failed,arrays,healthy,risk};
+  }
+  const R=37,C=2*Math.PI*R;
+  function gauge(h){const off=C*(1-h.score/100);return `<div class="gauge tone-${h.tone}"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="gtrack" cx="50" cy="50" r="${R}"></circle><circle class="garc" cx="50" cy="50" r="${R}" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"></circle></svg><div class="gc"><b>${h.score}</b><span>sağlık</span></div></div>`;}
+  function card(d){const h=health(d);const st=[d.capacity&&d.capacity.usedPct!=null?`Doluluk %${d.capacity.usedPct}`:"",(d.raid&&d.raid.working!=null)?`Disk ${d.raid.working}/${d.raid.total}`:"",d.cameras&&d.cameras.total?`Kamera ${d.cameras.online}/${d.cameras.total}`:"",d.retention?`${d.retention.days}g saklama`:""].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join("");const fc=forecast(d);
+    return `<button class="devcard tone-${h.tone}" data-id="${esc(d.id)}" type="button" aria-label="${esc(d.name)} detay">${gauge(h)}<div class="dc-body"><div class="dc-name">${esc(d.name)}</div><div class="dc-sub">${esc(d.host)} · ${esc(d.model)}${d.update&&d.update.outdated?` · <span class="dc-upd" title="Firmware güncellemesi mevcut: ${esc(d.update.latest||'')}">⬆ güncelleme</span>`:''}</div><span class="dc-badge tone-${h.tone}"><span class="dot"></span>${h.label}</span><div class="dc-stats">${st}</div><div class="dc-fc fc-${fc.cap.tone}">📈 ${esc(fc.cap.txt)}</div></div><div class="dc-go" aria-hidden="true">›</div></button>`;}
+  function detail(d){const reach=d.reachable?`<span class="dc-badge tone-ok"><span class="dot"></span>Erişilebilir</span>`:`<span class="dc-badge tone-crit"><span class="dot"></span>Erişilemiyor</span>`;const t=[];
+    if(d.capacity)t.push(`<div class="tile"><span class="tl">Kapasite</span><span class="tv tnum">${esc(d.capacity.total||"—")}</span><div class="bar"><i style="width:${Math.min(100,d.capacity.usedPct||0)}%"></i></div><span class="tsub tnum">%${d.capacity.usedPct} dolu${d.capacity.used?" · "+esc(d.capacity.used):""}</span>${spark(d.fillHist)}</div>`);
+    if(d.raid){const cnt=d.raid.working!=null?` · ${d.raid.working}/${d.raid.total} disk`:"";t.push(`<div class="tile"><span class="tl">RAID</span><span class="tv">${esc(d.raid.level)}</span><span class="tsub"><span class="tag-ok">${esc(d.raid.state)}</span>${cnt}</span></div>`);}
+    if(d.raid&&d.raid.working!=null)t.push(`<div class="tile"><span class="tl">Fiziksel disk</span><span class="tv tnum">${d.raid.working} / ${d.raid.total}</span><span class="tsub"><span class="${d.raid.failed?'':'tag-ok'}">${d.raid.failed} arızalı</span> · ${d.raid.spare} yedek</span></div>`);
+    if(d.retention)t.push(`<div class="tile"><span class="tl">Saklama</span><span class="tv tnum">${d.retention.days}<small> gün</small></span><span class="tsub">en eski kayıt</span>${spark(d.retHist,'tone-ret')}</div>`);
+    if(d.latency)t.push(`<div class="tile"><span class="tl">Yanıt</span><span class="tv tnum">${d.latency}<small> ms</small></span><span class="tsub">${esc(d.paths||"")}</span></div>`);
+    const f=forecast(d);
+    const disks=(d.disks||[]).map(k=>`<div class="disk${k.ok?(k.spare?' spare':''):' bad'}"><span class="dn">${esc(k.name)}</span><span class="dmeta">${k.slot!=null?'Yuva '+k.slot:(k.array?'RAID dizisi':'üye #'+k.member)}${k.spare?' · yedek':''}</span><span class="dstat">${k.ok?(k.spare?'yedek':'çalışıyor'):'ARIZALI'}</span></div>`).join("");
+    const dh=diskHealth(d);
+    const dhBlock=dh?`<h4>Disk Sağlığı</h4><div class="dhbox tone-${dh.tone}"><div class="dhtop"><span class="dc-badge tone-${dh.tone}"><span class="dot"></span>${esc(dh.status)}</span><span class="dhsum tnum">${esc(dh.level)} · ${dh.working}/${dh.total} disk · ${dh.failed} arızalı${dh.spare?` · ${dh.spare} yedek`:""}</span></div><div class="dhdet">${esc(dh.detail)}</div>${dh.rebuild!=null?`<div class="bar" style="margin-top:8px"><i style="width:${Math.round(dh.rebuild)}%"></i></div><span class="tsub">yeniden yapılandırma %${Math.round(dh.rebuild)}</span>`:""}</div>`:"";
+    const camB=(d.cameras&&d.cameras.total)?(function(){const c=d.cameras,tone=c.offline>0?'crit':'ok';
+      const diag=Array.isArray(CAMDIAG_CACHE[d.cfgId])?CAMDIAG_CACHE[d.cfgId]:null; const dmap={}; if(diag)diag.forEach(z=>{dmap[z.channel]=z.error_code;});
+      const items=c.offline>0?'<div class="disks" style="margin-top:10px">'+(c.offline_list||[]).map(x=>{const ec=dmap[x.channel];return `<div class="disk bad"><span class="dn">CH ${String(x.channel).padStart(2,'0')}</span><span class="dmeta">${esc(x.name||'')}${ec!=null?' · hata kodu '+ec:''}</span><span class="dstat">KOPUK</span></div>`;}).join('')+'</div>':'';
+      return `<h4>Kamera bağlantısı</h4><div class="dhbox tone-${tone}"><div class="dhtop"><span class="dc-badge tone-${tone}"><span class="dot"></span>${c.offline>0?c.offline+' kamera KOPUK':'Tüm kameralar bağlı'}</span><span class="dhsum tnum">${c.online}/${c.total} bağlı</span></div></div>${items}${c.offline>0?'<p class="note">Kopuk kamera hata kodu bağlantı sorununu gösterir (ağ/güç/kimlik). Toplu yeniden bağlama için NVR yeniden başlatılabilir (aşağıda).</p>':''}`;})():"";
+    const smartBlock=buildSmartBlock(d);
+    const chanBlock=buildChanBlock(d);
+    const usersBlock=buildUsersBlock(d);
+    const acctBlock=buildAccountsBlock(d);
+    const adBlock=buildAdBlock(d);
+    const rebootBlock=(d.cfgId!=null&&d.reachable)?`<h4>Uzaktan işlem</h4><div class="actions"><button class="btn ghost" data-synctime="${d.cfgId}" data-name="${esc(d.name)}">🕐 Saati eşitle</button><button class="btn ghost" data-reboot="${d.cfgId}" data-name="${esc(d.name)}">🔄 NVR'ı yeniden başlat</button></div><p class="note"><b>Saati eşitle</b>: cihaza şimdiki doğru saati yazar (kayıt tarihlerini düzeltir). <b>Yeniden başlat</b>: cihazı 1–2 dk erişilemez yapar, kaydı keser; çift onay istenir.</p>`:"";
+    const c=d.caps||{};
+    const profBlock=`<h4>Cihaz profili</h4><div class="fc">`+
+      `<div class="fcrow"><span class="fl">Model</span><span class="fv mono">${esc(d.model||'—')}</span></div>`+
+      `<div class="fcrow"><span class="fl">Firmware</span><span class="fv mono">${esc(d.fwFull||d.fw||'—')}</span></div>`+
+      (d.update?(d.update.status==='unknown'
+        ?`<div class="fcrow"><span class="fl">⬆ Güncelleme</span><span class="fv" style="color:var(--muted)">Belirsiz — manuel teyit gerek${d.update.url?` · <a href="${esc(d.update.url)}" target="_blank" rel="noopener">indirme merkezi</a>`:''}${d.update.note?`<br><span class="note" style="margin:2px 0 0">${esc(d.update.note)}</span>`:''}</span></div>`
+        :d.update.outdated
+        ?`<div class="fcrow tone-warn"><span class="fl">⬆ Güncelleme</span><span class="fv">Yeni: <b>${esc(d.update.latest||'?')}</b>${d.update.build?(' · '+esc(d.update.build)):''}${d.update.url?` · <a href="${esc(d.update.url)}" target="_blank" rel="noopener">indirme sayfası</a>`:''}${d.update.note?`<br><span class="note" style="margin:2px 0 0">${esc(d.update.note)}</span>`:''}</span></div>`
+        :`<div class="fcrow tone-ok"><span class="fl">⬆ Güncelleme</span><span class="fv">Güncel${d.update.latest?(' (en son '+esc(d.update.latest)+')'):''}</span></div>`):'')+
+      (d.serial?`<div class="fcrow"><span class="fl">Seri no</span><span class="fv mono">${esc(d.serial)}</span></div>`:'')+
+      `<div class="fcrow"><span class="fl">Disk düzeni</span><span class="fv">${c.disk_count!=null?(c.disk_count+' disk'):'—'}${c.has_raid?' · RAID dizisi':(c.disk_count?' · tek disk':'')}</span></div>`+
+      `<div class="fcrow"><span class="fl">SMART kaynağı</span><span class="fv">${esc(c.smart_source||'—')}</span></div>`+
+      `<div class="fcrow"><span class="fl">Bağlantı</span><span class="fv mono">${esc(d.paths||'CGI + RPC2')}</span></div>`+
+    `</div>`;
+    return `<div class="m-head"><span class="name">${esc(d.name)}</span><span class="addr">${esc(d.host)}</span><span class="badge">${esc(d.model)}</span>${reach}<button class="m-close" id="mClose" type="button" aria-label="Kapat">✕</button></div><div class="m-body"><h4>Genel</h4><div class="tiles">${t.join("")}</div>${profBlock}<h4>Öngörü</h4><div class="fc"><div class="fcrow tone-${f.cap.tone}"><span class="fl">💾 Doluluk</span><span class="fv">${esc(f.cap.txt)}</span></div><div class="fcrow tone-${f.ret.tone}"><span class="fl">🕓 Saklama</span><span class="fv">${esc(f.ret.txt)}</span></div></div>${dhBlock}${disks?`<h4>Fiziksel diskler (${d.disks.length})</h4><div class="disks">${disks}</div>${(d.smart&&d.smart.total)?'':'<p class="note">Bu cihazdan per-disk SMART (sıcaklık/sektör) alınamıyor — donanım RAID diskleri soyutluyor. İzlenen sinyal: RAID üyeliği, arıza sayısı ve redundans marjı.</p>'}`:""}${smartBlock}${camB}${usersBlock}${chanBlock}${acctBlock}${adBlock}${rebootBlock}</div>`;}
+  const CHAN_CACHE={};
+  function buildChanBlock(d){
+    if(d.cfgId==null||!d.reachable) return "";
+    const cc=CHAN_CACHE[d.cfgId];
+    if(Array.isArray(cc)){
+      if(!cc.length) return `<h4>Kameralar / kanallar</h4><p class="note">Kanal adı bulunamadı.</p>`;
+      const items=cc.map(k=>`<div class="chan"><span class="ci mono">${k.idx}</span><span class="cnm">${esc(k.name)}</span></div>`).join("");
+      return `<h4>Kameralar / kanallar (${cc.length})</h4><div class="chans">${items}</div>`;
+    }
+    if(cc==="error") return `<h4>Kameralar / kanallar</h4><p class="note">Kanal adları alınamadı (cihaz meşgul olabilir).</p>`;
+    return `<h4>Kameralar / kanallar</h4><p class="hint">Kanal adları yükleniyor…</p>`;
+  }
+  async function loadChannels(cfgId){
+    if(cfgId==null||Array.isArray(CHAN_CACHE[cfgId])) return;
+    try{
+      const r=await fetch("api/channels/"+cfgId,{headers:{Accept:"application/json"}});
+      const j=await r.json();
+      CHAN_CACHE[cfgId]=Array.isArray(j.channels)?j.channels:"error";
+    }catch(e){ CHAN_CACHE[cfgId]="error"; }
+    if(backdrop.classList.contains("open")&&curOpenId){const d=merged().find(x=>x.id===curOpenId);if(d){modal.innerHTML=detail(d);bindClose();}}
+  }
+  const USER_CACHE={};
+  function buildUsersBlock(d){
+    if(d.cfgId==null||!d.reachable) return "";
+    const uc=USER_CACHE[d.cfgId];
+    if(Array.isArray(uc)){
+      if(!uc.length) return `<h4>Bağlı kullanıcılar</h4><p class="note">Şu an açık oturum yok.</p>`;
+      const rows=uc.map(u=>{const tags=[u.group,u.type].filter(Boolean).map(x=>`<span class="stag">${esc(x)}</span>`).join("");
+        return `<tr><td class="ip">${esc(u.ip)}</td><td style="font-weight:600">${esc(u.user)}</td><td>${tags}</td><td class="mono" style="color:var(--muted);white-space:nowrap">${esc(u.since||"")}</td></tr>`;}).join("");
+      return `<h4>Bağlı kullanıcılar (${uc.length})</h4><div class="tablewrap"><table class="t"><thead><tr><th>IP</th><th>Kullanıcı</th><th>Grup / Tür</th><th>Oturum</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
+    if(uc==="error") return `<h4>Bağlı kullanıcılar</h4><p class="note">Açık oturum bilgisi alınamadı (cihaz meşgul olabilir).</p>`;
+    return `<h4>Bağlı kullanıcılar</h4><p class="hint">Açık oturumlar yükleniyor…</p>`;
+  }
+  async function loadUsers(cfgId){
+    if(cfgId==null||Array.isArray(USER_CACHE[cfgId])) return;
+    try{
+      const r=await fetch("api/users/"+cfgId,{headers:{Accept:"application/json"}});
+      const j=await r.json();
+      USER_CACHE[cfgId]=Array.isArray(j.users)?j.users:"error";
+    }catch(e){ USER_CACHE[cfgId]="error"; }
+    if(backdrop.classList.contains("open")&&curOpenId){const d=merged().find(x=>x.id===curOpenId);if(d){modal.innerHTML=detail(d);bindClose();}}
+  }
+  const SMART_CACHE={};
+  function buildSmartBlock(d){
+    if(d.cfgId==null||!d.reachable||!d.smart||!d.smart.total) return "";
+    const sc=SMART_CACHE[d.cfgId];
+    if(!Array.isArray(sc)) return `<h4>Disk SMART · öngörücü</h4><p class="hint">SMART detayı yükleniyor…</p>`;
+    if(!sc.length) return "";
+    const tv=t=>`var(--${t==='ok'?'ok':t==='warn'?'warn':'crit'})`;
+    const cells=sc.map(k=>{const t=k.health==='crit'?'crit':(k.health==='warn'?'warn':'ok');
+      const poh=k.power_on_hours!=null?Math.round(k.power_on_hours/24)+"g":"—";
+      const flags=[k.pending?`${k.pending} bekleyen`:"",k.uncorrectable?`${k.uncorrectable} düzeltilemez`:"",k.reallocated?`${k.reallocated} realloc`:"",k.predict?"⚠ öngörü":""].filter(Boolean).join(" · ");
+      const tr=k.trend||{}; let trLine="";
+      if(tr.status==="collecting"){ trLine=`<br><span style="color:var(--muted)">📈 trend: veri birikiyor (${tr.points||0} ölçüm)</span>`; }
+      else if(tr.status==="ok"){ const tc=tr.verdict==='ok'?'ok':(tr.verdict==='crit'?'crit':'warn'); trLine=`<br><span style="color:${tv(tc)}">📈 ${esc(tr.note||"")}${tr.span_days?` · ${tr.span_days}g geçmiş`:""}</span>`; }
+      return `<div class="disk" style="border-left-color:${tv(t)}"><span class="dn">${esc(k.disk)}</span><span class="dmeta">${k.temperature_c!=null?k.temperature_c+"°C":"—"} · ${poh}${flags?" · "+esc(flags):""}${trLine}</span><span class="dstat" style="color:${tv(t)}">${t==='ok'?'sağlam':(t==='warn'?'İZLE':'RİSK')}</span></div>`;
+    }).join("");
+    const s=d.smart;
+    return `<h4>Disk SMART · öngörücü (${sc.length})</h4><div class="dhbox tone-${s.crit?'crit':s.warn?'warn':'ok'}"><div class="dhtop"><span class="dc-badge tone-${s.crit?'crit':s.warn?'warn':'ok'}"><span class="dot"></span>${s.crit?s.crit+' disk RİSKLİ':s.warn?s.warn+' disk izlemede':'Tüm diskler sağlam'}</span><span class="dhsum tnum">maks ${s.max_temp!=null?s.max_temp+'°C':'—'} · ~${s.min_poh!=null?Math.round(s.min_poh/24):'—'}g yaş</span></div></div><div class="disks" style="margin-top:10px">${cells}</div><p class="note">Her fiziksel diskin SMART sağlığı (sıcaklık · yaş · bozuk-sektör). Bekleyen/yeniden-atanmış sektör artınca ya da sıcaklık yükselince disk ARIZALANMADAN alarm verir.</p>`;
+  }
+  async function loadSmart(cfgId){
+    if(cfgId==null||Array.isArray(SMART_CACHE[cfgId])) return;
+    try{ const r=await fetch("api/smart/"+cfgId,{headers:{Accept:"application/json"}}); const j=await r.json(); SMART_CACHE[cfgId]=Array.isArray(j.disks)?j.disks:[]; }
+    catch(e){ SMART_CACHE[cfgId]=[]; }
+    if(backdrop.classList.contains("open")&&curOpenId){const d=merged().find(x=>x.id===curOpenId);if(d){modal.innerHTML=detail(d);bindClose();}}
+  }
+  const ACCT_CACHE={};
+  function buildAccountsBlock(d){
+    if(d.cfgId==null||!d.reachable) return "";
+    const a=ACCT_CACHE[d.cfgId];
+    if(a&&typeof a==="object"&&a.accounts){
+      const flags=(a.flags||[]).map(fl=>`<span class="dc-badge tone-${fl.level==='ok'?'ok':fl.level==='warn'?'warn':'crit'}" style="margin:0 6px 8px 0"><span class="dot"></span>${esc(fl.text)}</span>`).join("");
+      const rows=a.accounts.map(u=>{const adm=String(u.group).toLowerCase()==='admin';return `<tr><td style="font-weight:600">${esc(u.name)}</td><td>${u.group?`<span class="sevpill ${adm?'sev-high':'sev-info'}">${esc(u.group)}</span>`:''}</td><td class="mono" style="color:var(--muted);font-size:12px">${esc(u.memo||'')}</td></tr>`;}).join("");
+      return `<h4>Hesaplar · Güvenlik (${a.accounts.length})</h4><div style="margin-bottom:4px">${flags}</div><div class="tablewrap"><table class="t"><thead><tr><th>Kullanıcı</th><th>Grup</th><th>Not</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
+    if(a==="error") return `<h4>Hesaplar · Güvenlik</h4><p class="note">Hesap bilgisi alınamadı.</p>`;
+    return `<h4>Hesaplar · Güvenlik</h4><p class="hint">Hesaplar yükleniyor…</p>`;
+  }
+  async function loadAccounts(cfgId){
+    if(cfgId==null||(ACCT_CACHE[cfgId]&&typeof ACCT_CACHE[cfgId]==="object")) return;
+    ACCT_CACHE[cfgId]="loading";
+    try{ const r=await fetch("api/device/"+cfgId+"/accounts"); const j=await r.json(); ACCT_CACHE[cfgId]=Array.isArray(j.accounts)?j:"error"; }
+    catch(e){ ACCT_CACHE[cfgId]="error"; }
+    if(backdrop.classList.contains("open")&&curOpenId){const d=merged().find(x=>x.id===curOpenId);if(d){modal.innerHTML=detail(d);bindClose();}}
+  }
+  const CAMDIAG_CACHE={};
+  async function loadCamDiag(cfgId){
+    if(cfgId==null||Array.isArray(CAMDIAG_CACHE[cfgId])) return;
+    CAMDIAG_CACHE[cfgId]="loading";
+    try{ const r=await fetch("api/device/"+cfgId+"/camdiag"); const j=await r.json(); CAMDIAG_CACHE[cfgId]=Array.isArray(j.diag)?j.diag:[]; }
+    catch(e){ CAMDIAG_CACHE[cfgId]=[]; }
+    if(backdrop.classList.contains("open")&&curOpenId){const d=merged().find(x=>x.id===curOpenId);if(d){modal.innerHTML=detail(d);bindClose();}}
+  }
+  const AD_CACHE={};
+  function buildAdBlock(d){
+    if(d.cfgId==null||!d.reachable) return "";
+    const a=AD_CACHE[d.cfgId];
+    if(!a||a==="loading") return `<h4>NVR domain (AD) üyeliği</h4><p class="hint">Cihaz AD ayarı okunuyor…</p>`;
+    if(a==="error") return `<h4>NVR domain (AD) üyeliği</h4><p class="note">Cihazın AD ayarı okunamadı (cihaz meşgul olabilir).</p>`;
+    if(a.error||a.supported===false) return `<h4>NVR domain (AD) üyeliği</h4><p class="note">Bu cihaz kendi AD/LDAP üyeliğini desteklemiyor.</p>`;
+    const on=!!a.enable, tone=on?"ok":"warn";
+    const badge=`<span class="dc-badge tone-${tone}"><span class="dot"></span>${on?"Domain'e ÜYE":"Yerel (domain kapalı)"}</span>`;
+    const cid=d.cfgId;
+    return `<h4>NVR domain (AD) üyeliği</h4><div style="margin-bottom:10px">${badge}</div>`+
+      `<label class="chk${on?" on":""}" id="nadWrap_${cid}" style="margin-bottom:12px"><input type="checkbox" id="nad_en_${cid}"${on?" checked":""} data-adtoggle> Bu NVR'ı domain'e üye yap (AD ile giriş)</label>`+
+      `<div class="frow"><label class="f"><span>AD sunucusu (DC)</span><input type="text" id="nad_srv_${cid}" value="${a.server&&a.server!=='0.0.0.0'?esc(a.server):''}" placeholder="10.20.x.x / dc.sirket.local"></label><label class="f"><span>Port</span><input type="number" id="nad_port_${cid}" value="${a.port||389}"></label></div>`+
+      `<div class="frow"><label class="f"><span>Base DN</span><input type="text" id="nad_bdn_${cid}" value="${esc(a.base_dn||'')}" placeholder="DC=sirket,DC=local"></label><label class="f"><span>Filtre (ops.)</span><input type="text" id="nad_flt_${cid}" value="${esc(a.filter||'')}" placeholder=""></label></div>`+
+      `<div class="actions" style="margin-top:12px"><button class="btn primary" data-adsave="${cid}" data-name="${esc(d.name)}" type="button">NVR AD ayarını kaydet</button></div>`+
+      `<p class="note">Bu ayar cihazın <b>kendisini</b> domain denetleyicisine bağlar; domain hesaplarıyla NVR'a giriş yapılabilir. Yerel <code>admin</code> her zaman geçerli kalır. Yazma cihaza uygulanır — onay istenir.</p>`;
+  }
+  async function loadDeviceAd(cfgId){
+    if(cfgId==null||(AD_CACHE[cfgId]&&typeof AD_CACHE[cfgId]==="object")) return;
+    AD_CACHE[cfgId]="loading";
+    try{ const r=await fetch("api/device/"+cfgId+"/adconfig"); const j=await r.json(); AD_CACHE[cfgId]=(j&&typeof j==="object")?j:"error"; }
+    catch(e){ AD_CACHE[cfgId]="error"; }
+    if(backdrop.classList.contains("open")&&curOpenId){const d=merged().find(x=>x.id===curOpenId);if(d){modal.innerHTML=detail(d);bindClose();}}
+  }
+  function fmtLevel(x){return x?String(x).replace(/RAID(\d)/i,"RAID $1"):x;}
+  // /api/overview cihazını (canlı kaynak) render modeline çevirir; BASE'te aynı
+  // host varsa statik zenginleştirme (disk üyeleri, kullanıcılar, toplam TB) eklenir.
+  function fmtCap(bytes){ if(bytes==null) return null; const tb=bytes/1e12; if(tb>=1) return (tb>=100?Math.round(tb):tb.toFixed(1))+" TB"; const gb=bytes/1e9; return (gb>=1?Math.round(gb):(bytes/1e6).toFixed(0)+" MB")+(gb>=1?" GB":""); }
+  function apiToDevice(a, base){
+    const b=base||{};
+    const tb=a.total_bytes;
+    const usedPct = a.fill_pct!=null ? Math.round(a.fill_pct*100)/100
+                  : ((tb&&a.used_bytes!=null)?Math.round(1000*a.used_bytes/tb)/10:null);
+    const cap = (tb!=null&&tb>0) ? {                       // canlı kapasite (tüm cihazlar)
+      usedPct: usedPct!=null?usedPct:0, total: fmtCap(tb), totalTB: tb/1e12, used: fmtCap(a.used_bytes)
+    } : (usedPct!=null ? {
+      usedPct, total:(b.capacity&&b.capacity.total)||null,
+      totalTB:(b.capacity&&b.capacity.totalTB)||null, used:(b.capacity&&b.capacity.used)||null
+    } : (b.capacity||null));
+    const ar=(a.raids&&a.raids[0])||null;
+    const pick=(v,bv)=> v!=null?v:(bv!=null?bv:null);
+    const raid = ar ? {
+      level:fmtLevel(ar.level)||(b.raid&&b.raid.level)||"RAID dizisi", levelNum:ar.level_num!=null?ar.level_num:null,
+      state:ar.state||"unknown",
+      working:pick(ar.working, b.raid&&b.raid.working), active:pick(ar.active, null),
+      total:pick(ar.total, b.raid&&b.raid.total),
+      failed:pick(ar.failed, b.raid&&b.raid.failed), spare:pick(ar.spare, b.raid&&b.raid.spare),
+      rebuild_pct:ar.rebuild_pct!=null?ar.rebuild_pct:(b.raid&&b.raid.rebuild_pct)||null,
+      members:(ar.members&&ar.members.length)?ar.members:null,
+      membersDetail:(ar.members_detail&&ar.members_detail.length)?ar.members_detail:null
+    } : (b.raid||null);
+    // Diskler: RPC2 üye detayı (yuva+yedek) > üye adı > BASE > disk_metrics (dizi)
+    let disks;
+    if(raid&&raid.membersDetail){ disks=raid.membersDetail.map((m,i)=>({name:m.name,member:i+1,slot:m.slot,spare:m.spare,ok:true})); }
+    else if(raid&&raid.members){ disks=raid.members.map((nm,i)=>({name:nm,member:i+1,ok:true})); }
+    else if(b.disks&&b.disks.length){ disks=b.disks; }
+    else { disks=(a.disks||[]).map((k,i)=>({name:k.name,member:i+1,ok:k.state==="ok",array:/\/md\d/.test(k.name||"")})); }
+    return {
+      id:a.name, name:a.name, cfgId:a.cfg_id!=null?a.cfg_id:null, host:a.host, model:a.model||b.model||"—",
+      fw:(a.fw?String(a.fw).replace(/,.*/,""):(b.fw||"")), serial:a.serial||"", caps:a.caps||null,
+      fwFull:a.fw||"", update:a.update||null,
+      reachable:a.reachable, latency:a.latency_ms!=null?Math.round(a.latency_ms):(b.latency||null),
+      paths:b.paths||"CGI + RPC2", capacity:cap, raid:raid,
+      retention:a.retention_days!=null?{days:Math.round(a.retention_days),below:false}:(b.retention||null),
+      minRetention:a.min_retention_days!=null?a.min_retention_days:null,
+      cameras:a.cameras||null, smart:a.smart||null,
+      disks:disks, users:(b.users||[]), fillHist:a.fill_hist||[], retHist:a.ret_hist||[]
+    };
+  }
+  function merged(){
+    if(!LAST_API.length) return BASE.map(b=>JSON.parse(JSON.stringify(b)));  // çevrimdışı: gömülü anlık görüntü
+    return LAST_API.map(a=>apiToDevice(a, BASE.find(x=>x.host===a.host)));
+  }
+  async function fetchLive(){
+    try{
+      const r=await fetch("api/overview",{cache:"no-store"});
+      if(!r.ok) throw 0;
+      const j=await r.json();
+      LAST_API = j.devices||[];
+      lastOk=Date.now(); connState="live";
+    }catch(e){ connState=lastOk?"stale":"offline"; }
+    render(); updateInd(); syncMgmtDevices(); refreshAlBadge();
+  }
+  function ago(s){return s<5?"az önce":s<60?s+" sn önce":Math.round(s/60)+" dk önce";}
+  function updateInd(){const s=Math.max(0,Math.round((Date.now()-lastOk)/1000));const txt=connState==="offline"?"çevrimdışı · anlık görüntü":(connState==="stale"?"bağlantı yok · ":"canlı · ")+ago(s);const cls=connState==="live"?"live-ind":"live-ind stale";[["liveInd","liveTxt"],["sysLive","sysLiveTxt"]].forEach(([i,t])=>{if($(i)){$(i).className=cls;$(t).textContent=txt;}});}
+  const grid=$("deviceGrid"),backdrop=$("backdrop"),modal=$("modal");
+  function render(){const list=merged();grid.innerHTML=list.map(card).join("");$("devCount").textContent=list.length;if(backdrop.classList.contains("open")&&curOpenId){const d=list.find(x=>x.id===curOpenId);if(d){modal.innerHTML=detail(d);bindClose();}}renderDeviceMgmt();renderKpi(list);syncSystemMetrics(list);}
+  function renderDiskFleet(list){
+    const el=$("diskFleet"); if(!el) return;
+    const f=fleetDiskHealth(list);
+    if($("dfArrays")) $("dfArrays").textContent=f.arrays+" dizi";
+    if(!f.arrays){ el.innerHTML='<p class="hint" style="margin:0">Disk/RAID verisi bekleniyor…</p>'; return; }
+    const sm=fleetSmart(list);
+    const stats=`
+      <div class="dfstat"><b class="tnum">${f.disks}</b><span>RAID diski</span></div>
+      <div class="dfstat ${f.failed?'crit':'ok'}"><b class="tnum">${f.failed}</b><span>arızalı</span></div>
+      <div class="dfstat ${f.risk?'warn':'ok'}"><b class="tnum">${f.healthy}/${f.arrays}</b><span>sağlıklı dizi</span></div>
+      <div class="dfstat ${sm.attention?'warn':'ok'}"><b class="tnum">${sm.attention}</b><span>SMART uyarı</span></div>
+      <div class="dfstat ${sm.maxtemp!=null&&sm.maxtemp>=55?'warn':'ok'}"><b class="tnum">${sm.maxtemp!=null?sm.maxtemp+'°':'—'}</b><span>en yüksek sıcaklık</span></div>`;
+    const chips=list.map(d=>{const h=diskHealth(d); if(!h)return ""; return `<button class="dfchip tone-${h.tone}" data-id="${esc(d.id)}" type="button" aria-label="${esc(d.name)} disk sağlığı"><span class="dot"></span><span class="dfn">${esc(d.name)}</span><span class="dfm">${esc(h.level)} · ${h.working}/${h.total}${h.failed?` · ${h.failed} arızalı`:''}</span></button>`;}).filter(Boolean).join("");
+    el.innerHTML=`<div class="dfstats">${stats}</div>${chips?`<div class="dfchips">${chips}</div>`:""}`;
+    el.querySelectorAll("[data-id]").forEach(b=>b.addEventListener("click",()=>openDevice(b.dataset.id)));
+  }
+  function fleetCameras(list){let total=0,online=0,offline=0,dev=0,off_dev=0;list.forEach(d=>{const c=d.cameras;if(!c)return;dev++;total+=c.total||0;online+=c.online||0;offline+=c.offline||0;if(c.offline>0)off_dev++;});return {total,online,offline,dev,off_dev};}
+  function fleetSmart(list){let physdisks=0,maxtemp=null,attention=0,predict=false;list.forEach(d=>{const s=d.smart;if(!s)return;physdisks+=s.total||0;attention+=(s.warn||0)+(s.crit||0);if(s.max_temp!=null&&(maxtemp==null||s.max_temp>maxtemp))maxtemp=s.max_temp;if(s.predict)predict=true;});return{physdisks,maxtemp,attention,predict};}
+  let _openAlarms=0;
+  function renderKpi(list){
+    const el=$("fleetKpi"); if(!el)return;
+    const df=fleetDiskHealth(list), fc=fleetCameras(list), sm=fleetSmart(list);
+    const reach=list.filter(d=>d.reachable).length;
+    const kpis=[
+      {ic:"🖥️",v:`${reach}/${list.length}`,l:"cihaz erişilebilir",tone:reach<list.length?"crit":"ok"},
+      {ic:"💽",v:`${df.disks}`,l:df.failed?`RAID diski · ${df.failed} arızalı`:"RAID diski sağlam",tone:df.failed?"crit":"ok"},
+      {ic:"🎥",v:`${fc.online}/${fc.total}`,l:fc.offline?`kamera · ${fc.offline} kopuk`:"kamera bağlı",tone:fc.offline?"crit":"ok"},
+      {ic:"🩺",v:`${sm.attention}`,l:"SMART uyarısı",tone:sm.attention?"warn":"ok"},
+      {ic:"🌡️",v:sm.maxtemp!=null?sm.maxtemp+"°":"—",l:"en yüksek disk sıcaklığı",tone:(sm.maxtemp!=null&&sm.maxtemp>=55)?"warn":"ok"},
+      {ic:"🔔",v:`${_openAlarms}`,l:"açık alarm",tone:_openAlarms?"crit":"ok"},
+    ];
+    el.innerHTML=kpis.map(k=>`<div class="kpi tone-${k.tone}"><span class="kpi-ic">${k.ic}</span><div><b class="tnum">${esc(k.v)}</b><span>${esc(k.l)}</span></div></div>`).join("");
+  }
+  function renderCamFleet(list){
+    const el=$("camFleet"); if(!el) return;
+    const f=fleetCameras(list);
+    if($("cfDev")) $("cfDev").textContent=f.dev+" cihaz";
+    if(!f.dev){ el.innerHTML='<p class="hint" style="margin:0">Kamera bağlantı verisi bekleniyor (≤2 dk)…</p>'; return; }
+    const stats=`
+      <div class="dfstat"><b class="tnum">${f.total}</b><span>toplam kamera</span></div>
+      <div class="dfstat ok"><b class="tnum">${f.online}</b><span>bağlı</span></div>
+      <div class="dfstat ${f.offline?'crit':'ok'}"><b class="tnum">${f.offline}</b><span>kopuk</span></div>
+      <div class="dfstat ${f.off_dev?'warn':'ok'}"><b class="tnum">${f.dev-f.off_dev}/${f.dev}</b><span>tam bağlı cihaz</span></div>`;
+    const chips=list.map(d=>{const c=d.cameras; if(!c)return ""; const tone=c.offline>0?"crit":"ok"; return `<button class="dfchip tone-${tone}" data-id="${esc(d.id)}" type="button" aria-label="${esc(d.name)} kamera durumu"><span class="dot"></span><span class="dfn">${esc(d.name)}</span><span class="dfm">${c.online}/${c.total}${c.offline?` · ${c.offline} kopuk`:''}</span></button>`;}).filter(Boolean).join("");
+    el.innerHTML=`<div class="dfstats">${stats}</div>${chips?`<div class="dfchips">${chips}</div>`:""}`;
+    el.querySelectorAll("[data-id]").forEach(b=>b.addEventListener("click",()=>openDevice(b.dataset.id)));
+  }
+  // ---- Disk sıcaklık ısı-haritası ----
+  function tempColor(t){
+    if(t==null) return "var(--track)";
+    const stops=[[30,[59,130,196]],[42,[51,192,129]],[52,[214,154,58]],[60,[229,112,107]]];
+    t=Math.max(stops[0][0],Math.min(60,t));
+    for(let i=1;i<stops.length;i++){ if(t<=stops[i][0]){ const a=stops[i-1][0],ca=stops[i-1][1],b=stops[i][0],cb=stops[i][1],f=(t-a)/(b-a||1); const c=ca.map((v,k)=>Math.round(v+(cb[k]-v)*f)); return `rgb(${c[0]},${c[1]},${c[2]})`; } }
+    return "rgb(229,112,107)";
+  }
+  async function loadHeatmap(){
+    try{ const r=await fetch("api/smart",{cache:"no-store"}); const j=await r.json(); renderHeatmap(j.disks||[]); }catch(e){}
+  }
+  function renderHeatmap(disks){
+    const el=$("heatmap"); if(!el) return;
+    if(!disks.length){ el.innerHTML='<p class="hint" style="margin:0">Disk SMART verisi bekleniyor (≤30 dk)…</p>'; return; }
+    const byDev={}; disks.forEach(d=>{ (byDev[d.device]=byDev[d.device]||[]).push(d); });
+    const rows=Object.keys(byDev).sort().map(dev=>{
+      const cells=byDev[dev].map(d=>{const bad=d.health&&d.health!=='ok',t=d.temperature_c;
+        return `<span class="hcell${bad?' bad':''}" title="${esc(dev)} · ${esc(d.disk)} — ${t!=null?t+'°C':'—'}${bad?' · '+(d.health==='crit'?'RİSKLİ':'İZLE'):''}" style="background:${tempColor(t)}" data-dev="${esc(dev)}">${t!=null?t:'?'}</span>`;
+      }).join("");
+      return `<div class="hrow"><span class="hdev">${esc(dev)}</span><div class="hcells">${cells}</div></div>`;
+    }).join("");
+    el.innerHTML=rows+`<div class="hlegend"><span>soğuk</span><i class="hgrad"></i><span>sıcak (60°+)</span><span class="hsep"></span><span class="hcell bad" style="width:16px;height:14px;background:var(--surface-2)"></span> uyarı</div>`;
+    el.querySelectorAll(".hcell[data-dev]").forEach(c=>c.addEventListener("click",()=>openDevice(c.dataset.dev)));
+  }
+  // ---- Subnet tarama / toplu ekleme ----
+  let _scanFound=[], _scanCreds={};
+  async function runScan(){
+    const cidr=$("scanCidr").value.trim(), user=$("scanUser").value.trim()||"admin", pass=$("scanPass").value;
+    if(!cidr){toast("IP aralığı girin");return;} if(!pass){toast("Parola girin");return;}
+    $("scanStatus").innerHTML='<span class="mono">⏳ Taranıyor… (aralığa göre birkaç dakika sürebilir)</span>';
+    $("scanResults").innerHTML=""; $("scanBtn").disabled=true;
+    try{
+      const r=await fetch("api/scan",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:`cidr=${encodeURIComponent(cidr)}&username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`});
+      const j=await r.json();
+      if(j.error){ $("scanStatus").innerHTML=`<span style="color:var(--crit)">${esc(j.error)}</span>`; return; }
+      _scanFound=j.found||[]; _scanCreds={user,pass}; renderScan(j);
+    }catch(e){ $("scanStatus").innerHTML='<span style="color:var(--crit)">Tarama başarısız oldu</span>'; }
+    finally{ $("scanBtn").disabled=false; }
+  }
+  function renderScan(j){
+    $("scanStatus").innerHTML=`${j.scanned} IP tarandı · ${j.live} canlı host · <b>${j.found.length} NVR bulundu</b>`;
+    if(!j.found.length){ $("scanResults").innerHTML='<p class="hint" style="margin-top:8px">Bu aralıkta (bu kimlikle) yeni NVR bulunamadı.</p>'; return; }
+    const rows=j.found.map((d,i)=>`<tr><td style="width:34px">${d.existing?'<span class="sevpill sev-info">ekli</span>':`<input type="checkbox" class="scan-dev" data-i="${i}" checked>`}</td><td class="ip">${esc(d.host)}</td><td class="mono" style="font-size:11px">${esc(d.model||'NVR')}</td><td>${d.channels!=null?d.channels+' kanal':'—'}</td><td class="mono" style="font-size:11px;color:var(--muted)">${esc(d.serial||'')}</td></tr>`).join("");
+    $("scanResults").innerHTML=`<div class="tablewrap" style="margin-top:12px"><table class="t"><thead><tr><th></th><th>IP</th><th>Model</th><th>Kanal</th><th>Seri No</th></tr></thead><tbody>${rows}</tbody></table></div><div class="actions" style="margin-top:12px"><button class="btn primary" id="scanAdd" type="button">＋ Seçilenleri ekle</button></div>`;
+    $("scanAdd").addEventListener("click",addScanned);
+  }
+  async function addScanned(){
+    const sel=[...document.querySelectorAll(".scan-dev:checked")].map(c=>_scanFound[+c.dataset.i]).filter(Boolean);
+    if(!sel.length){toast("En az bir cihaz seçin");return;}
+    let ok=0;
+    for(const d of sel){
+      const body=`name=${encodeURIComponent(d.host)}&host=${encodeURIComponent(d.host)}&username=${encodeURIComponent(_scanCreds.user)}&password=${encodeURIComponent(_scanCreds.pass)}&https=${d.https?"true":"false"}${d.port?`&port=${d.port}`:""}${d.channels?`&max_channels=${d.channels}`:""}&autodetect=false`;
+      try{ await fetch("devices",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body,redirect:"manual"}); ok++; }catch(e){}
+    }
+    toast(`${ok} cihaz eklendi — ~1 dk'da izlemeye girer`);
+    $("scanResults").innerHTML=""; $("scanStatus").innerHTML=`<b>${ok} cihaz eklendi.</b> İzlenen cihazlar listesinde görünecekler.`;
+    setTimeout(fetchLive,700);
+  }
+  $("scanBtn") && $("scanBtn").addEventListener("click",runScan);
+  function renderDeviceMgmt(){
+    const dm=$("devMgmtList"); if(!dm) return;
+    const rows = LAST_API.length ? LAST_API : BASE.map(b=>({name:b.name,host:b.host,cfg_id:null,reachable:b.reachable}));
+    dm.innerHTML = rows.map(a=>{
+      const st = a.reachable===false ? '<span style="color:var(--crit);font-weight:600">erişilemiyor</span>'
+        : (a.reachable ? '<span class="tag-ok">erişilebilir</span>' : '<span style="color:var(--faint)">bekliyor</span>');
+      const act = a.cfg_id!=null
+        ? `<button class="rm" title="Düzelt" data-edit="${a.cfg_id}">✎</button> <button class="rm" title="Sil" data-del="${a.cfg_id}" data-name="${esc(a.name)}">✕</button>`
+        : "";
+      return `<tr><td style="font-weight:600">${esc(a.name)}</td><td class="ip">${esc(a.host)}</td><td>${st}</td><td style="white-space:nowrap;text-align:right">${act}</td></tr>`;
+    }).join("");
+    dm.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>delDevice(b.dataset.del,b.dataset.name)));
+    dm.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>editDevice(+b.dataset.edit)));
+  }
+  async function delDevice(cfgId,name){
+    if(!confirm(name+" cihazını silmek istediğinize emin misiniz?")) return;
+    try{ await fetch("devices/"+cfgId+"/delete",{method:"POST"}); toast(name+" silindi — izlemeden ~1 dk'da çıkar"); setTimeout(fetchLive,400); }
+    catch(e){ toast("Silinemedi"); }
+  }
+  function resetAddForm(){
+    const f=$("addNvrForm"); f.reset();
+    $("editCfgId").value="";
+    f.password.required=true; f.password.placeholder="";        // eklemede parola zorunlu
+    $("addFormTitle").innerHTML='<span class="ic" style="background:var(--accent)"></span>Yeni NVR ekle';
+    $("addSubmitBtn").textContent="＋ Cihazı ekle";
+    $("addSubmitBtn").disabled=false;
+    $("cancelEditBtn").hidden=true;
+    $("probeResult").textContent="Port/HTTPS/kanal kaydederken otomatik bulunur. Tespit et yalnızca önizleme içindir; elle de düzenleyebilirsiniz.";
+    f.https.closest(".chk").classList.toggle("on",f.https.checked);
+  }
+  $("cancelEditBtn") && $("cancelEditBtn").addEventListener("click",resetAddForm);
+  function editDevice(cfgId){
+    const a=LAST_API.find(x=>x.cfg_id===cfgId); if(!a) return;
+    const f=$("addNvrForm");
+    $("editCfgId").value=cfgId;
+    f.name.value=a.name||""; f.host.value=a.host||""; f.username.value=a.username||"monitor";
+    f.port.value=a.port!=null?a.port:""; f.password.value="";
+    f.password.required=false; f.password.placeholder="değiştirmek istemezsen boş bırak";  // isim değişikliği parola istemez
+    const on=a.https!==false; f.https.checked=on; f.https.closest(".chk").classList.toggle("on",on);
+    $("addFormTitle").innerHTML='<span class="ic" style="background:var(--warn)"></span>Cihazı düzenle: '+esc(a.name||"");
+    $("addSubmitBtn").textContent="✓ Değişikliği kaydet";
+    $("addSubmitBtn").disabled=false;
+    $("cancelEditBtn").hidden=false;
+    $("probeResult").innerHTML='<span style="color:var(--warn)">Düzenliyorsunuz — <b>'+esc(a.name||"")+'</b>. Sadece adı değiştireceksen parolayı <b>boş bırak</b>; cihaza dokunulmaz. Sonra <b>Değişikliği kaydet</b>.</span>';
+    f.name.focus(); f.name.select(); f.scrollIntoView({behavior:"smooth",block:"center"});
+  }
+  // Ekle/Düzenle: sayfayı yeniden yüklemeden (AJAX). Net başarı/hata bildirimi,
+  // uzun tespit sırasında "aranıyor…" göstergesi, listeyi anında tazele.
+  $("addNvrForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const f=$("addNvrForm"), btn=$("addSubmitBtn"), editing=!!$("editCfgId").value;
+    if(!f.name.value.trim()||!f.host.value.trim()){toast("Ad ve IP zorunlu");return;}
+    if(!editing&&!f.password.value){toast("Yeni cihaz için parola gerekli");return;}
+    const label=btn.textContent;
+    btn.disabled=true;
+    btn.textContent = editing ? (f.password.value?"Kaydediliyor… (cihaz aranıyor)":"Kaydediliyor…") : "Ekleniyor… (cihaz aranıyor)";
+    try{
+      const r=await fetch("devices",{method:"POST",body:new URLSearchParams(new FormData(f))});
+      let j={}; try{ j=await r.json(); }catch(_){}
+      if(r.ok&&j.ok){
+        toast((j.edited?"Güncellendi: ":"Eklendi: ")+j.name+(j.warning?" — "+j.warning:""));
+        resetAddForm();
+        fetchLive();
+      }else{
+        btn.disabled=false; btn.textContent=label;
+        toast("Hata: "+(j.error||("işlem başarısız ("+r.status+")")));
+      }
+    }catch(err){
+      btn.disabled=false; btn.textContent=label;
+      toast("İstek gönderilemedi");
+    }
+  });
+  function bindClose(){const c=$("mClose");if(c)c.addEventListener("click",closeModal);}
+  function openDevice(id){const d=merged().find(x=>x.id===id);if(!d)return;curOpenId=id;modal.innerHTML=detail(d);backdrop.classList.add("open");lastFocus=document.activeElement;modal.scrollTop=0;bindClose();const c=$("mClose");if(c)c.focus();if(d.cfgId!=null&&d.reachable){loadChannels(d.cfgId);delete USER_CACHE[d.cfgId];loadUsers(d.cfgId);loadSmart(d.cfgId);delete ACCT_CACHE[d.cfgId];loadAccounts(d.cfgId);delete AD_CACHE[d.cfgId];loadDeviceAd(d.cfgId);if(d.cameras&&d.cameras.offline>0){delete CAMDIAG_CACHE[d.cfgId];loadCamDiag(d.cfgId);}}}
+  function closeModal(){backdrop.classList.remove("open");curOpenId=null;if(lastFocus&&lastFocus.focus)lastFocus.focus();}
+  grid.addEventListener("click",e=>{const b=e.target.closest(".devcard");if(b)openDevice(b.dataset.id);});
+  backdrop.addEventListener("click",e=>{if(e.target===backdrop)closeModal();});
+  modal.addEventListener("click",e=>{const b=e.target.closest("[data-reboot]");if(b){rebootDevice(b.dataset.reboot,b.dataset.name);return;}const s=e.target.closest("[data-adsave]");if(s){saveDeviceAd(s.dataset.adsave,s.dataset.name);return;}const t=e.target.closest("[data-synctime]");if(t)syncDeviceTime(t.dataset.synctime,t.dataset.name);});
+  async function syncDeviceTime(cfgId,name){
+    if(!confirm(name+" cihazının saati şimdiki doğru zamana ayarlansın mı?\n\nKayıt tarihlerini düzeltir, kaydı bozmaz."))return;
+    try{const r=await fetch("api/device/"+cfgId+"/synctime",{method:"POST"});const j=await r.json();
+      toast(j.ok?(name+" saati eşitlendi: "+(j.after||"")):("Başarısız: "+(j.error||"cihaz reddetti")));}
+    catch(e){toast("Komut gönderilemedi");}
+  }
+  modal.addEventListener("change",e=>{const t=e.target.closest("[data-adtoggle]");if(t){const w=t.closest(".chk");if(w)w.classList.toggle("on",t.checked);}});
+  async function saveDeviceAd(cfgId,name){
+    const g=id=>document.getElementById(id);
+    const en=g("nad_en_"+cfgId)&&g("nad_en_"+cfgId).checked;
+    const srv=(g("nad_srv_"+cfgId)?g("nad_srv_"+cfgId).value:"").trim();
+    const port=(g("nad_port_"+cfgId)?g("nad_port_"+cfgId).value:"389").trim()||"389";
+    const bdn=(g("nad_bdn_"+cfgId)?g("nad_bdn_"+cfgId).value:"").trim();
+    const flt=(g("nad_flt_"+cfgId)?g("nad_flt_"+cfgId).value:"").trim();
+    if(en&&(!srv||srv==="0.0.0.0")){toast("Etkinleştirmek için AD sunucu adresi gerekli");return;}
+    const msg=en?(name+" cihazı DOMAIN'E ÜYE yapılsın mı?\n\nSunucu: "+srv+"\nBase DN: "+(bdn||"(boş)")+"\n\nDomain hesaplarıyla NVR'a giriş açılır. Yerel admin geçerli kalır."):(name+" cihazının domain (AD) üyeliği KAPATILSIN mı?");
+    if(!confirm(msg))return;
+    const body=`enable=${en?"true":"false"}&server=${encodeURIComponent(srv)}&port=${encodeURIComponent(port)}&base_dn=${encodeURIComponent(bdn)}&filter=${encodeURIComponent(flt)}`;
+    try{
+      const r=await fetch("api/device/"+cfgId+"/adconfig",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body});
+      const j=await r.json();
+      if(j.ok){toast(name+" AD ayarı kaydedildi");delete AD_CACHE[cfgId];loadDeviceAd(cfgId);}
+      else toast("Başarısız: "+(j.error||"cihaz reddetti"));
+    }catch(e){toast("Komut gönderilemedi");}
+  }
+  async function rebootDevice(cfgId,name){
+    if(!confirm(name+" NVR'ı YENİDEN BAŞLATILSIN mı?\n\nCihaz 1-2 dakika erişilemez olur, kayıt kesilir. Tüm kameralar yeniden bağlanır."))return;
+    if(!confirm("Son onay — "+name+" şimdi yeniden başlatılacak."))return;
+    try{const r=await fetch("api/device/"+cfgId+"/reboot",{method:"POST"});const j=await r.json();toast(j.ok?(name+" yeniden başlatılıyor… (~1-2 dk)"):("Başarısız: "+(j.error||"")));}
+    catch(e){toast("Komut gönderilemedi");}
+  }
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&backdrop.classList.contains("open"))closeModal();});
+
+  // ---- sistem görünümü canlı senkron ----
+  function syncSystemMetrics(list){
+    if($("mDev"))$("mDev").textContent=list.length;
+    const wc=list.find(d=>d.capacity&&d.capacity.usedPct!=null);
+    if($("mFill"))$("mFill").textContent = wc? "%"+wc.capacity.usedPct : "—";
+    let w=0,t=0; list.forEach(d=>{if(d.raid){w+=(d.raid.working||0);t+=(d.raid.total||0);}});
+    if($("mDisk"))$("mDisk").textContent = t? (w+"/"+t) : "—";
+  }
+  // ---- Filo raporu / CSV ----
+  function fleetRow(d){
+    const h=health(d);
+    const cap=(d.capacity&&d.capacity.total)||"—";
+    const fill=(d.capacity&&d.capacity.usedPct!=null)?("%"+d.capacity.usedPct):"—";
+    const raid=d.raid?(d.raid.level+(d.raid.working!=null?` ${d.raid.working}/${d.raid.total}`:"")):"—";
+    const disk=(d.raid&&d.raid.working!=null)?(d.raid.failed?`${d.raid.failed} arızalı`:"sağlam"):"—";
+    const ret=d.retention?(d.retention.days+" gün"):"—";
+    const cam=d.cameras?`${d.cameras.online}/${d.cameras.total}${d.cameras.offline?` (${d.cameras.offline} kopuk)`:""}`:"—";
+    const smart=d.smart?`${d.smart.crit?d.smart.crit+' riskli':(d.smart.warn?d.smart.warn+' izle':'sağlam')}${d.smart.max_temp!=null?` · ${d.smart.max_temp}°`:""}`:"—";
+    return {name:d.name,host:d.host,model:d.model,score:h.score,tone:h.tone,durum:d.reachable?"erişilebilir":"erişilemiyor",cap,fill,raid,disk,ret,cam,smart,diskBad:!!(d.raid&&d.raid.failed),camBad:!!(d.cameras&&d.cameras.offline>0),smartBad:!!(d.smart&&(d.smart.crit||d.smart.warn))};
+  }
+  function renderFleetReport(list){
+    const tb=$("fleetRows"); if(!tb)return;
+    tb.innerHTML=list.map(d=>{const r=fleetRow(d);const tv=`var(--${r.tone==='ok'?'ok':r.tone==='warn'?'warn':'crit'})`;
+      return `<tr><td style="font-weight:600">${esc(r.name)}</td><td class="ip">${esc(r.host)}</td><td class="mono" style="font-size:11px">${esc(r.model)}</td><td><span class="sevpill" style="background:color-mix(in srgb,${tv} 16%,transparent);color:${tv}">${r.score}</span></td><td>${r.durum==='erişilebilir'?'<span class="tag-ok">erişilebilir</span>':'<span style="color:var(--crit);font-weight:600">erişilemiyor</span>'}</td><td class="tnum">${esc(r.cap)}</td><td class="tnum">${esc(r.fill)}</td><td>${esc(r.raid)}</td><td>${r.diskBad?`<span style="color:var(--crit);font-weight:600">${esc(r.disk)}</span>`:esc(r.disk)}</td><td class="tnum">${esc(r.ret)}</td><td>${r.camBad?`<span style="color:var(--crit);font-weight:600">${esc(r.cam)}</span>`:esc(r.cam)}</td><td>${r.smartBad?`<span style="color:var(--${d.smart&&d.smart.crit?'crit':'warn'});font-weight:600">${esc(r.smart)}</span>`:esc(r.smart)}</td></tr>`;}).join("");
+    const f=fleetCameras(list), df=fleetDiskHealth(list);
+    if($("fleetSummary"))$("fleetSummary").textContent=`${list.length} cihaz · ${df.disks} disk · ${f.total} kamera${f.offline?` (${f.offline} kopuk)`:""}`;
+  }
+  function exportCsv(){
+    const list=merged();
+    const cols=["Cihaz","IP","Model","Saglik","Durum","Kapasite","Doluluk_%","RAID","Disk","Saklama_gun","Kamera_bagli","Kamera_toplam","Kamera_kopuk","SMART_saglik","SMART_max_sicaklik_C","SMART_uyari_disk"];
+    const rows=list.map(d=>{const r=fleetRow(d),c=d.cameras||{},s=d.smart||{};return [r.name,r.host,r.model,r.score,r.durum,(d.capacity&&d.capacity.total)||"",(d.capacity&&d.capacity.usedPct!=null)?d.capacity.usedPct:"",r.raid,r.disk,d.retention?d.retention.days:"",c.online!=null?c.online:"",c.total!=null?c.total:"",c.offline!=null?c.offline:"",(s.crit?"riskli":s.warn?"izle":(s.total?"saglam":"")),s.max_temp!=null?s.max_temp:"",(s.total?((s.warn||0)+(s.crit||0)):"")];});
+    const q=v=>{v=(v==null?"":String(v));return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+    const csv=[cols.join(";"),...rows.map(r=>r.map(q).join(";"))].join("\r\n");
+    const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+    const ts=new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
+    a.href=url; a.download="nobetci-filo-raporu-"+ts+".csv"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast("CSV indirildi");
+  }
+  $("csvBtn") && $("csvBtn").addEventListener("click",exportCsv);
+  // ---- API entegrasyonu: anahtar yönetimi ----
+  async function loadKeys(){
+    try{ const r=await fetch("api/keys",{cache:"no-store"}); const j=await r.json(); renderKeys(j.keys||[]); }catch(e){}
+  }
+  function renderKeys(keys){
+    const tb=$("keyRows"); if(!tb)return;
+    if(!keys.length){ tb.innerHTML=`<tr><td colspan="4" class="empty">Henüz API anahtarı yok.</td></tr>`; return; }
+    tb.innerHTML=keys.map(k=>`<tr><td style="font-weight:600">${esc(k.name)}${k.enabled?"":' <span class="sevpill sev-info">iptal</span>'}</td><td class="mono" style="color:var(--muted)">${esc(k.created_at)}</td><td class="mono" style="color:var(--muted)">${k.last_used?esc(k.last_used):"—"}</td><td style="text-align:right"><button class="rm" data-rev="${k.id}">iptal</button></td></tr>`).join("");
+    tb.querySelectorAll("[data-rev]").forEach(b=>b.addEventListener("click",()=>revokeKey(b.dataset.rev)));
+  }
+  async function createKey(){
+    const name=$("keyName").value.trim(); if(!name){toast("Anahtar adı gerekli");return;}
+    try{
+      const r=await fetch("api/keys",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:"name="+encodeURIComponent(name)});
+      const j=await r.json();
+      $("keyResult").innerHTML=`<div class="keynew"><span>🔑 Yeni anahtar — <b>yalnızca şimdi görünür</b>, güvenli sakla:</span><code class="mono">${esc(j.key)}</code><button class="btn ghost tiny" id="keyCopy" type="button">📋 Kopyala</button></div>`;
+      $("keyName").value=""; loadKeys();
+      const cp=$("keyCopy"); if(cp)cp.addEventListener("click",()=>{try{navigator.clipboard.writeText(j.key);toast("Anahtar kopyalandı");}catch(e){toast("Kopyalanamadı — elle seçin");}});
+    }catch(e){ toast("Anahtar üretilemedi"); }
+  }
+  async function revokeKey(id){ if(!confirm("Bu API anahtarı iptal edilsin mi? Kullanan entegrasyonlar erişimi kaybeder."))return; try{ await fetch("api/keys/"+id+"/revoke",{method:"POST"}); toast("Anahtar iptal edildi"); loadKeys(); }catch(e){ toast("İptal edilemedi"); } }
+  $("keyCreate") && $("keyCreate").addEventListener("click",createKey);
+  $("keyName") && $("keyName").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();createKey();}});
+  // ---- Active Directory ayarları ----
+  async function loadAdSettings(){
+    try{ const r=await fetch("api/settings/ad"); const j=await r.json();
+      if($("adEnabled")){$("adEnabled").checked=!!j.enabled;$("adEnableWrap").classList.toggle("on",!!j.enabled);}
+      if($("adServer"))$("adServer").value=j.server||""; if($("adDomain"))$("adDomain").value=j.domain||"";
+      if($("adBaseDn"))$("adBaseDn").value=j.base_dn||""; if($("adGroup"))$("adGroup").value=j.group||"";
+    }catch(e){}
+  }
+  $("adEnabled") && $("adEnabled").addEventListener("change",e=>e.target.closest(".chk").classList.toggle("on",e.target.checked));
+  async function saveAd(){
+    const b=`enabled=${$("adEnabled").checked?"true":"false"}&server=${encodeURIComponent($("adServer").value.trim())}&domain=${encodeURIComponent($("adDomain").value.trim())}&base_dn=${encodeURIComponent($("adBaseDn").value.trim())}&group=${encodeURIComponent($("adGroup").value.trim())}`;
+    try{ await fetch("api/settings/ad",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:b}); toast("AD ayarları kaydedildi"); }catch(e){ toast("Kaydedilemedi"); }
+  }
+  async function testAd(){
+    const u=$("adTestUser").value.trim(), p=$("adTestPass").value;
+    if(!u||!p){toast("Test kullanıcı adı + parola girin");return;}
+    $("adTestResult").innerHTML='<span class="mono">⏳ Deneniyor…</span>';
+    const b=`username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}&server=${encodeURIComponent($("adServer").value.trim())}&domain=${encodeURIComponent($("adDomain").value.trim())}&base_dn=${encodeURIComponent($("adBaseDn").value.trim())}&group=${encodeURIComponent($("adGroup").value.trim())}`;
+    try{ const r=await fetch("api/settings/ad/test",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:b}); const j=await r.json();
+      $("adTestResult").innerHTML = j.ok ? '<span class="tag-ok">✓ Başarılı — bu hesap AD ile giriş yapabilir</span>' : `<span style="color:var(--crit)">✕ Başarısız${j.error?" — "+esc(j.error):" — kimlik, sunucu ya da grup uyuşmadı"}</span>`;
+    }catch(e){ $("adTestResult").innerHTML='<span style="color:var(--crit)">Test edilemedi</span>'; }
+  }
+  $("adSave") && $("adSave").addEventListener("click",saveAd);
+  $("adTest") && $("adTest").addEventListener("click",testAd);
+  // ---- Saat / NTP eşitleme ----
+  async function loadNtpSettings(){
+    try{ const r=await fetch("api/settings/ntp"); const j=await r.json();
+      if($("ntpServer"))$("ntpServer").value=j.server||"";
+      if($("ntpPort"))$("ntpPort").value=j.port||123;
+      if($("ntpTz")&&j.tz!=null)$("ntpTz").value=j.tz;
+    }catch(e){}
+  }
+  async function saveNtp(){
+    const b=`server=${encodeURIComponent($("ntpServer").value.trim())}&port=${encodeURIComponent($("ntpPort").value.trim()||"123")}&tz=${encodeURIComponent($("ntpTz").value.trim()||"3")}`;
+    try{ await fetch("api/settings/ntp",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:b}); toast("NTP ayarı kaydedildi"); }catch(e){ toast("Kaydedilemedi"); }
+  }
+  async function syncAll(){
+    if(!confirm("TÜM erişilebilir NVR'ların saati şimdiki doğru zamana ayarlanacak"+($("ntpServer").value.trim()?" ve NTP etkinleştirilecek":"")+".\n\nBu cihazlara yazar; kaydı bozmaz, tarihleri düzeltir. Devam?"))return;
+    const btn=$("syncAllBtn"), lbl=btn.textContent; btn.disabled=true; btn.textContent="⏳ Eşitleniyor…";
+    $("ntpResult").innerHTML='<span class="mono">⏳ Cihazlara yazılıyor…</span>';
+    try{
+      const r=await fetch("api/synctime/all",{method:"POST"}); const j=await r.json();
+      const rows=(j.results||[]).map(x=>{const ok=x.ok;const tone=ok?'ok':'crit';
+        return `<tr><td style="font-weight:600">${esc(x.device)}</td><td>${ok?'<span class="tag-ok">✓</span>':'<span style="color:var(--crit)">✕</span>'}</td><td class="mono" style="font-size:11px;color:var(--muted)">${esc(x.before||'-')}</td><td class="mono" style="font-size:11px">→ ${esc(x.after||'-')}</td><td>${x.ntp?'<span class="sevpill sev-info">NTP açık</span>':''}</td></tr>`;}).join("");
+      $("ntpResult").innerHTML=`<div style="margin-bottom:8px"><b>${j.synced}/${j.total}</b> cihaz eşitlendi</div><div class="tablewrap"><table class="t"><thead><tr><th>Cihaz</th><th>Sonuç</th><th>Önce</th><th>Sonra</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      toast(`${j.synced}/${j.total} cihazın saati eşitlendi`);
+      fetchLive();
+    }catch(e){ $("ntpResult").innerHTML='<span style="color:var(--crit)">Eşitleme başarısız</span>'; toast("Eşitlenemedi"); }
+    finally{ btn.disabled=false; btn.textContent=lbl; }
+  }
+  $("ntpSave") && $("ntpSave").addEventListener("click",saveNtp);
+  $("syncAllBtn") && $("syncAllBtn").addEventListener("click",syncAll);
+  function syncSystem(){const list=merged();syncSystemMetrics(list);renderFleetReport(list);loadKeys();loadAdSettings();loadNtpSettings();loadAlerting();updateInd();}
+  // .172 allowlist'e eklendiği için statik güvenlik uyarısı gizli kalır;
+  // gerçek yetkisiz girişler artık Alarmlar sekmesinde canlı görünür.
+
+  render();fetchLive();setInterval(fetchLive,30000);setInterval(updateInd,1000);
+  loadHeatmap();setInterval(loadHeatmap,60000);
+
+  // ================= YÖNETİM =================
+  // İzlenen tüm cihazlar (canlı) — yönetim listeleri buradan doldurulur, artık
+  // sabit-kodlu tek cihaz değil. LAST_API boşsa (çevrimdışı) gömülü BASE'e düşer.
+  function liveNvrs(){const src=(typeof LAST_API!=='undefined'&&LAST_API.length)?LAST_API:BASE;return src.map(a=>({id:a.name,name:a.name,host:a.host||"",channels:a.max_channels||a.channels||32,cfgId:(a.cfg_id!=null?a.cfg_id:(a.cfgId!=null?a.cfgId:null))}));}
+  let _nvrSig="";
+  function syncMgmtDevices(){const list=liveNvrs();const sig=list.map(n=>n.id+':'+(n.cfgId==null?'':n.cfgId)).join("|");if(sig===_nvrSig)return;_nvrSig=sig;if($("u-devices"))renderUserDevices();if($("camDevice")){renderCamDevices();if(!list.some(n=>n.id===curDev)){curDev=(list[0]||{id:""}).id;curChan=0;}if(typeof renderChans==='function'){renderChans();loadChan();}}}
+  function renderUserDevices(){const box=$("u-devices");if(!box)return;box.innerHTML=liveNvrs().map(n=>`<label class="chk"><input type="checkbox" class="u-dev" value="${esc(n.id)}"> ${esc(n.name)}</label>`).join("")+`<label class="chk"><input type="checkbox" id="u-allDev"> <b>Tüm cihazlar</b></label>`;$("u-allDev").addEventListener("change",e=>{document.querySelectorAll(".u-dev").forEach(i=>i.disabled=e.target.checked);syncChk();});box.querySelectorAll("input").forEach(i=>i.addEventListener("change",syncChk));const pr=ROLE_PRESET[$("u-role")?$("u-role").value:"monitor"]||ROLE_PRESET.monitor;$("u-allDev").checked=pr.allDevices;document.querySelectorAll(".u-dev").forEach(i=>i.disabled=pr.allDevices);syncChk();}
+  function renderCamDevices(){const sel=$("camDevice");if(!sel)return;const cur=sel.value;sel.innerHTML=liveNvrs().map(n=>`<option value="${esc(n.id)}">${esc(n.name)} · ${esc(n.host)}</option>`).join("");if(cur&&liveNvrs().some(n=>n.id===cur))sel.value=cur;}
+  const ROLE_LABEL={admin:"Yönetici",operator:"Operatör",monitor:"Salt-izleme"};
+  const PERMS=[{id:"live",label:"Canlı izleme"},{id:"play",label:"Geri oynatma"},{id:"ptz",label:"PTZ kontrol"},{id:"export",label:"Dışa aktarma"},{id:"config",label:"Yapılandırma"},{id:"users",label:"Kullanıcı yönetimi"}];
+  const ROLE_PRESET={monitor:{perms:["live","play"],allDevices:false},operator:{perms:["live","play","ptz","export"],allDevices:false},admin:{perms:["live","play","ptz","export","config","users"],allDevices:true}};
+  const mtabs=[...document.querySelectorAll(".mtab")];
+  mtabs.forEach(tb=>tb.addEventListener("click",()=>mtabs.forEach(x=>{x.setAttribute("aria-selected",x===tb);$(x.getAttribute("aria-controls")).hidden=x!==tb;})));
+  renderUserDevices();
+  $("u-perms").innerHTML=PERMS.map(p=>`<label class="chk"><input type="checkbox" class="u-perm" value="${p.id}"> ${esc(p.label)}</label>`).join("");
+  function syncChk(){document.querySelectorAll("#m-users .chk").forEach(l=>l.classList.toggle("on",!!l.querySelector("input").checked));}
+  function applyRole(r){const pr=ROLE_PRESET[r]||ROLE_PRESET.monitor;document.querySelectorAll(".u-perm").forEach(i=>i.checked=pr.perms.includes(i.value));$("u-allDev").checked=pr.allDevices;document.querySelectorAll(".u-dev").forEach(i=>i.disabled=pr.allDevices);syncChk();}
+  $("u-role").addEventListener("change",e=>applyRole(e.target.value));
+  document.querySelectorAll("#u-perms .chk input").forEach(i=>i.addEventListener("change",syncChk));applyRole("monitor");
+  let users=[];
+  function renderUsers(){const tb=$("userRows");if(!users.length){tb.innerHTML=`<tr><td colspan="4" class="empty">Henüz kullanıcı yok.</td></tr>`;return;}tb.innerHTML=users.map((u,i)=>{const dv=u.allDevices?`<span class="tagchip">tüm cihazlar</span>`:(u.devices.length?u.devices.map(d=>`<span class="tagchip">${esc(d)}</span>`).join(""):`<span class="tagchip">—</span>`);return `<tr><td style="font-weight:600">${esc(u.name)}</td><td><span class="pill ${u.role}">${ROLE_LABEL[u.role]}</span></td><td>${dv}</td><td><button class="rm" data-i="${i}" aria-label="Sil">✕</button></td></tr>`;}).join("");tb.querySelectorAll(".rm").forEach(b=>b.addEventListener("click",()=>{users.splice(+b.dataset.i,1);renderUsers();}));}
+  renderUsers();
+  $("userForm").addEventListener("submit",e=>{e.preventDefault();const n=$("u-name").value.trim(),p=$("u-pass").value,p2=$("u-pass2").value;if(!n){toast("Kullanıcı adı gerekli");return;}if(!p){toast("Parola gerekli");return;}if(p2&&p!==p2){toast("Parolalar eşleşmiyor");return;}const all=$("u-allDev").checked,dv=[...document.querySelectorAll(".u-dev:checked")].map(i=>i.value);if(!all&&!dv.length){toast("En az bir cihaz seçin");return;}users.push({name:n,role:$("u-role").value,allDevices:all,devices:dv});renderUsers();$("userForm").reset();applyRole("monitor");toast("Kullanıcı eklendi (önizleme)");});
+  $("userForm").addEventListener("reset",()=>setTimeout(()=>applyRole($("u-role").value),0));
+  let recipients=[];
+  function renderRecip(){$("recipList").innerHTML=recipients.length?recipients.map((r,i)=>`<span class="r">${esc(r)}<button data-i="${i}" aria-label="Kaldır">✕</button></span>`).join(""):`<span class="hint">Alıcı yok.</span>`;$("recipList").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{recipients.splice(+b.dataset.i,1);renderRecip();}));}
+  renderRecip();
+  function addMail(){const v=$("mailInput").value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){toast("Geçerli e-posta girin");return;}if(recipients.includes(v)){toast("Zaten ekli");return;}recipients.push(v);$("mailInput").value="";renderRecip();}
+  $("mailAdd").addEventListener("click",addMail);$("mailInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addMail();}});
+  $("smtpTls").addEventListener("change",e=>e.target.closest(".chk").classList.toggle("on",e.target.checked));
+  $("tgEnable").addEventListener("change",e=>e.target.closest(".chk").classList.toggle("on",e.target.checked));
+  async function loadAlerting(){
+    try{ const r=await fetch("api/settings/alerting"); const j=await r.json();
+      if($("tgEnable")){$("tgEnable").checked=!!j.tg_enabled;$("tgEnableWrap").classList.toggle("on",!!j.tg_enabled);}
+      if($("tgChat"))$("tgChat").value=j.tg_chat||"";
+      if($("tgToken"))$("tgToken").placeholder=j.tg_token_set?"•••• kayıtlı (değiştirmek için gir)":"bot token";
+      if($("smtpHost"))$("smtpHost").value=j.smtp_host||"";
+      if($("smtpPort"))$("smtpPort").value=j.smtp_port||587;
+      if($("smtpTls")){$("smtpTls").checked=!!j.smtp_tls;$("smtpTls").closest(".chk").classList.toggle("on",!!j.smtp_tls);}
+      if($("smtpUser"))$("smtpUser").value=j.smtp_user||"";
+      if($("smtpPass"))$("smtpPass").placeholder=j.smtp_pass_set?"•••• kayıtlı":"••••••••";
+      if($("smtpFrom"))$("smtpFrom").value=j.mail_from||"";
+      recipients=(j.mail_to||"").split(",").map(x=>x.trim()).filter(Boolean); renderRecip();
+      const rb=document.querySelector('input[name=sev][value="'+(j.min_severity||"high")+'"]'); if(rb)rb.checked=true;
+    }catch(e){}
+  }
+  function alertingBody(){
+    const sev=(document.querySelector('input[name=sev]:checked')||{}).value||"high";
+    const mailOn=recipients.length>0 && !!$("smtpHost").value.trim();
+    const p=new URLSearchParams();
+    p.set("tg_enabled",$("tgEnable").checked?"true":"false");
+    if($("tgToken").value.trim())p.set("tg_token",$("tgToken").value.trim());
+    p.set("tg_chat",$("tgChat").value.trim());
+    p.set("mail_enabled",mailOn?"true":"false");
+    p.set("smtp_host",$("smtpHost").value.trim());
+    p.set("smtp_port",$("smtpPort").value.trim()||"587");
+    p.set("smtp_tls",$("smtpTls").checked?"true":"false");
+    p.set("smtp_user",$("smtpUser").value.trim());
+    if($("smtpPass").value)p.set("smtp_pass",$("smtpPass").value);
+    p.set("mail_from",$("smtpFrom").value.trim());
+    p.set("mail_to",recipients.join(","));
+    p.set("min_severity",sev);
+    return p.toString();
+  }
+  async function saveAlerting(){
+    try{ await fetch("api/settings/alerting",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body:alertingBody()});
+      $("tgToken").value=""; $("smtpPass").value=""; toast("Bildirim ayarları kaydedildi"); loadAlerting();
+    }catch(e){ toast("Kaydedilemedi"); }
+  }
+  async function testAlerting(){
+    await saveAlerting(); toast("Test gönderiliyor…");
+    try{ const r=await fetch("api/settings/alerting/test",{method:"POST"}); const j=await r.json();
+      if(!j.ok){ toast("Test başarısız: "+(j.error||"etkin kanal yok")); return; }
+      const parts=Object.entries(j.results||{}).map(([k,v])=>k+" "+(v.ok?"✓":"✕ "+(v.error||"")));
+      toast("Test — "+parts.join(" · "));
+    }catch(e){ toast("Test gönderilemedi"); }
+  }
+  $("saveAlerts").addEventListener("click",saveAlerting);
+  $("tgSave").addEventListener("click",saveAlerting);
+  $("testMail").addEventListener("click",testAlerting);
+  $("tgTest").addEventListener("click",testAlerting);
+  renderCamDevices();
+  const CAM_CACHE={};let curDev=(liveNvrs()[0]||{id:""}).id,curChan=0;
+  function curCfg(){const n=liveNvrs().find(x=>x.id===curDev);return n?n.cfgId:null;}
+  async function loadCam(cfgId){
+    if(cfgId==null||Array.isArray(CAM_CACHE[cfgId]))return;
+    CAM_CACHE[cfgId]="loading";
+    try{const r=await fetch("api/channels/"+cfgId,{headers:{Accept:"application/json"}});const j=await r.json();CAM_CACHE[cfgId]=Array.isArray(j.channels)?j.channels:"error";}
+    catch(e){CAM_CACHE[cfgId]="error";}
+    renderChans();loadChan();
+  }
+  function renderChans(){
+    const cfg=curCfg(),sum=$("chanSummary"),list=$("chanList");if(!list)return;
+    if(cfg==null){if(sum)sum.textContent="Cihaz bekleniyor…";list.innerHTML="";return;}
+    const data=CAM_CACHE[cfg];
+    if(!Array.isArray(data)){if(sum)sum.textContent=data==="error"?"Kanal bilgisi alınamadı":"Yükleniyor…";list.innerHTML=data==="error"?'<p class="hint">Cihaza ulaşılamadı ya da meşgul.</p>':'<p class="hint">Kanallar cihazdan yükleniyor…</p>';if(data!=="error"&&data!=="loading")loadCam(cfg);return;}
+    if(curChan>=data.length)curChan=0;
+    const offCnt=data.filter(c=>c.online===false).length;
+    if(sum)sum.textContent=`${data.length} kanal`+(offCnt?` · ${offCnt} kopuk`:"");
+    list.innerHTML=data.map((c,i)=>{const off=c.online===false;const meta=off?"⚠ bağlantı kopuk":[c.codec,c.resolution,(c.fps!=null?c.fps+"fps":"")].filter(Boolean).join(" · ");return `<button class="chanbtn${off?' bad':''}" aria-pressed="${i===curChan}" data-i="${i}"><span class="cnum">CH ${String(c.idx).padStart(2,"0")}</span><span class="cnm">${esc(c.name)}</span><span class="cst ${off?'st-off-cam':'st-meta'}">${esc(meta||"—")}</span></button>`;}).join("");
+    list.querySelectorAll(".chanbtn").forEach(b=>b.addEventListener("click",()=>{curChan=+b.dataset.i;loadChan();renderChans();}));
+  }
+  function loadChan(){
+    const cfg=curCfg(),data=cfg!=null?CAM_CACHE[cfg]:null,c=Array.isArray(data)?data[curChan]:null;
+    const set=(id,v)=>{if($(id))$(id).textContent=v;};
+    if(!c){["cd-name","cd-res","cd-codec","cd-bitrate","cd-fps","cd-brc"].forEach(i=>set(i,"—"));if($("camDetailTitle"))$("camDetailTitle").textContent="Kanal detayı";showSnapshot();return;}
+    if($("camDetailTitle"))$("camDetailTitle").textContent=`Kanal detayı · CH ${String(c.idx).padStart(2,"0")}`+(c.online===false?" · ⚠ BAĞLANTI KOPUK":"");
+    set("cd-name",c.name||"—");set("cd-res",c.resolution||"—");set("cd-codec",c.codec||"—");
+    set("cd-bitrate",c.bitrate!=null?c.bitrate+" kbps":"—");set("cd-fps",c.fps!=null?c.fps+" fps":"—");set("cd-brc",c.bitrate_control||"—");
+    showSnapshot();
+  }
+  function showSnapshot(){
+    const cfg=curCfg(),data=cfg!=null?CAM_CACHE[cfg]:null,c=Array.isArray(data)?data[curChan]:null;
+    const img=$("snapImg"),empty=$("snapEmpty"); if(!img||!empty)return;
+    if(!c||cfg==null){img.hidden=true;img.removeAttribute("src");empty.hidden=false;empty.textContent="Bir kanal seçin — anlık kare burada gösterilir.";return;}
+    if(c.online===false){img.hidden=true;img.removeAttribute("src");empty.hidden=false;empty.textContent="⚠ Kamera kopuk — canlı görüntü yok.";return;}
+    empty.hidden=false;empty.textContent="Görüntü yükleniyor…";img.hidden=true;
+    img.onload=()=>{empty.hidden=true;img.hidden=false;};
+    img.onerror=()=>{img.hidden=true;empty.hidden=false;empty.textContent="Görüntü alınamadı (kamera meşgul olabilir).";};
+    img.src=`api/snapshot/${cfg}/${c.idx}?t=${Date.now()}`;
+  }
+  $("snapRefresh") && $("snapRefresh").addEventListener("click",showSnapshot);
+  $("camDevice").addEventListener("change",e=>{curDev=e.target.value;curChan=0;renderChans();loadChan();});
+  renderChans();loadChan();
+  document.querySelectorAll("#m-devices .chk input[type=checkbox]").forEach(c=>c.addEventListener("change",e=>e.target.closest(".chk").classList.toggle("on",e.target.checked)));
+  async function probeDevice(){
+    const f=$("addNvrForm"), host=f.host.value.trim(), user=(f.username.value.trim()||"monitor"), pass=f.password.value, box=$("probeResult");
+    if(!host||!pass){ box.innerHTML='<span style="color:var(--warn)">Önce IP ve parola girin</span>'; return; }
+    box.textContent="🔍 Tespit ediliyor…";
+    try{
+      const body=new URLSearchParams({host, username:user, password:pass});
+      const r=await fetch("devices/probe",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded"},body});
+      const j=await r.json();
+      if(j.found){
+        f.https.checked=!!j.https; f.https.closest(".chk").classList.toggle("on",!!j.https);
+        f.port.value=j.port; if(j.channels) f.max_channels.value=j.channels;
+        const fw=j.software_version?(" · fw "+esc(String(j.software_version).split(",")[0])):"";
+        box.innerHTML=`<span class="tag-ok">✓ Bulundu:</span> ${esc(j.device_type||"NVR")} · ${esc(j.scheme)}:${j.port}${j.channels?(" · "+j.channels+" kanal"):""}${fw}`;
+      } else box.innerHTML=`<span style="color:var(--crit)">✗ ${esc(j.error||"cihaz bulunamadı")}</span>`;
+    }catch(e){ box.innerHTML='<span style="color:var(--crit)">✗ tespit isteği başarısız</span>'; }
+  }
+  $("probeBtn") && $("probeBtn").addEventListener("click",probeDevice);
+
+  $("logoutBtn") && $("logoutBtn").addEventListener("click",()=>{fetch("logout",{method:"POST"}).finally(()=>{location.href="login";});});
+  // ---- tema ----
+  (function(){const root=document.documentElement,btn=$("themeBtn");try{const s=localStorage.getItem("dahua-theme");if(s)root.setAttribute("data-theme",s);}catch(e){}btn.addEventListener("click",()=>{const cur=root.getAttribute("data-theme");const next=cur==="dark"?"light":cur==="light"?"dark":(matchMedia("(prefers-color-scheme: dark)").matches?"light":"dark");root.setAttribute("data-theme",next);try{localStorage.setItem("dahua-theme",next);}catch(e){}});})();
+</script>

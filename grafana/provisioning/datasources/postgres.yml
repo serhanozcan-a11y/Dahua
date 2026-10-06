@@ -1,0 +1,16 @@
+apiVersion: 1
+
+datasources:
+  - name: Dahua-PostgreSQL
+    uid: dahua-pg
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: db:5432
+    user: dahua
+    isDefault: true
+    jsonData:
+      database: dahua
+      sslmode: disable
+      timescaledb: true
+    secureJsonData:
+      password: $DB_PASSWORD

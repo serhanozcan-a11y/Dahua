@@ -1,0 +1,88 @@
+services:
+  db:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_DB: dahua
+      POSTGRES_USER: dahua
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?.env dosyasinda DB_PASSWORD tanimlayin}
+    volumes:
+      - ./pg-data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dahua"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  collector:
+    build: ./collector
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dahua:${DB_PASSWORD}@db:5432/dahua
+      SECRET_KEY: ${SECRET_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./devices.yaml:/app/devices.yaml:ro
+    restart: unless-stopped
+
+  # NVR envanter yönetimi + parola girişi (http://sunucu:8000, kullanıcı: admin)
+  panel:
+    build: ./collector
+    command: uvicorn dahua_monitor.panel:app --host 0.0.0.0 --port 8000
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dahua:${DB_PASSWORD}@db:5432/dahua
+      SECRET_KEY: ${SECRET_KEY:?.env dosyasinda SECRET_KEY tanimlayin}
+      PANEL_PASSWORD: ${PANEL_PASSWORD:?.env dosyasinda PANEL_PASSWORD tanimlayin}
+      # Active Directory (opsiyonel) — .env'de tanimliysa domain girisi acilir,
+      # yoksa yalnizca yerel admin parolasi calisir.
+      AD_SERVER: ${AD_SERVER:-}
+      AD_DOMAIN: ${AD_DOMAIN:-}
+      AD_BASE_DN: ${AD_BASE_DN:-}
+      AD_GROUP: ${AD_GROUP:-}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/login',timeout=5).status==200 else 1)\""]
+      interval: 20s
+      timeout: 6s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana-oss:11.2.0
+    ports:
+      # Sunucuda 3000 doluysa .env'e GRAFANA_PORT=3001 yazmak yeterli
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      DB_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      # Adlandırılmış volume: bind-mount izin sorunlarını (uid 472) önler
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Gerçek NVR olmadan uçtan uca deneme için sahte cihaz.
+  # devices.yaml'a host: nvr-sim, port: 8080 ile eklenir.
+  nvr-sim:
+    image: python:3.11-slim
+    command: python /sim/nvr_sim.py
+    environment:
+      SIM_SCENARIO: ${SIM_SCENARIO:-healthy}
+    volumes:
+      - ./simulator:/sim:ro
+    profiles: ["dev"]
+
+volumes:
+  grafana-data:

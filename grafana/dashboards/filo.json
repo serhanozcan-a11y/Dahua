@@ -1,0 +1,86 @@
+{
+  "uid": "dahua-filo",
+  "title": "Dahua NVR Filosu",
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Erişilebilir NVR",
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null } ] } }, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "table", "rawSql": "SELECT count(*) AS deger FROM (SELECT DISTINCT ON (nvr_id) reachable FROM nvr_metrics ORDER BY nvr_id, ts DESC) t WHERE reachable" } ]
+    },
+    {
+      "id": 2, "type": "stat", "title": "Erişilemeyen NVR",
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "table", "rawSql": "SELECT count(*) AS deger FROM (SELECT DISTINCT ON (nvr_id) reachable FROM nvr_metrics ORDER BY nvr_id, ts DESC) t WHERE NOT reachable" } ]
+    },
+    {
+      "id": 3, "type": "stat", "title": "Arızalı Disk",
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "table", "rawSql": "SELECT count(*) AS deger FROM (SELECT DISTINCT ON (nvr_id, disk_name) state FROM disk_metrics ORDER BY nvr_id, disk_name, ts DESC) t WHERE state = 'error'" } ]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Sorunlu RAID",
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "table", "rawSql": "SELECT count(*) AS deger FROM (SELECT DISTINCT ON (nvr_id, raid_name) state FROM raid_metrics ORDER BY nvr_id, raid_name, ts DESC) t WHERE state IN ('degraded','failed','rebuilding')" } ]
+    },
+    {
+      "id": 5, "type": "stat", "title": "En Düşük Saklama (gün)",
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 0 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": { "decimals": 1, "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "yellow", "value": 15 }, { "color": "green", "value": 30 } ] } }, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "table", "rawSql": "SELECT min(retention_days) AS deger FROM (SELECT DISTINCT ON (nvr_id) retention_days FROM retention_metrics ORDER BY nvr_id, ts DESC) t" } ]
+    },
+    {
+      "id": 6, "type": "table", "title": "Cihaz Durumları (son)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "table", "rawSql": "SELECT n.name AS cihaz, n.device_type AS model, n.software_version AS firmware, m.reachable AS erisilebilir, round(m.latency_ms::numeric,0) AS gecikme_ms, n.last_seen AS son_gorulme FROM nvr n LEFT JOIN LATERAL (SELECT reachable, latency_ms FROM nvr_metrics WHERE nvr_id=n.id ORDER BY ts DESC LIMIT 1) m ON true ORDER BY n.name" } ]
+    },
+    {
+      "id": 7, "type": "table", "title": "Disk ve RAID Durumları (son)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "table", "rawSql": "SELECT n.name AS cihaz, d.disk_name AS birim, d.state AS durum, round(100.0*d.used_bytes/nullif(d.total_bytes,0),1) AS doluluk_pct, d.health_ok AS smart FROM (SELECT DISTINCT ON (nvr_id, disk_name) * FROM disk_metrics ORDER BY nvr_id, disk_name, ts DESC) d JOIN nvr n ON n.id=d.nvr_id UNION ALL SELECT n.name, r.raid_name, r.state, NULL, NULL FROM (SELECT DISTINCT ON (nvr_id, raid_name) * FROM raid_metrics ORDER BY nvr_id, raid_name, ts DESC) r JOIN nvr n ON n.id=r.nvr_id ORDER BY 1, 2" } ]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Disk Doluluğu (%)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 14 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": { "custom": { "spanNulls": true }, "max": 100, "min": 0, "unit": "percent" }, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "time_series", "rawSql": "SELECT d.ts AS time, n.name || ' ' || d.disk_name AS metric, 100.0*d.used_bytes/nullif(d.total_bytes,0) AS value FROM disk_metrics d JOIN nvr n ON n.id=d.nvr_id WHERE $__timeFilter(d.ts) AND d.total_bytes > 0 ORDER BY 1" } ]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "Saklama Derinliği (gün)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": { "custom": { "spanNulls": true }, "unit": "d" }, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "time_series", "rawSql": "SELECT r.ts AS time, n.name AS metric, r.retention_days AS value FROM retention_metrics r JOIN nvr n ON n.id=r.nvr_id WHERE $__timeFilter(r.ts) ORDER BY 1" } ]
+    },
+    {
+      "id": 10, "type": "table", "title": "Son Olaylar / Alarmlar",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+      "datasource": { "type": "grafana-postgresql-datasource", "uid": "dahua-pg" },
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "targets": [ { "refId": "A", "format": "table", "rawSql": "SELECT e.ts AS zaman, coalesce(n.name,'-') AS cihaz, e.code AS kod, e.severity AS onem, e.payload->>'message' AS mesaj FROM event e LEFT JOIN nvr n ON n.id=e.nvr_id ORDER BY e.ts DESC LIMIT 50" } ]
+    }
+  ],
+  "schemaVersion": 39,
+  "version": 1
+}

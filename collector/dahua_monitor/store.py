@@ -1,0 +1,217 @@
+"""PostgreSQL/TimescaleDB yazım katmanı. Şema: db/schema.sql"""
+
+from __future__ import annotations
+
+import json
+from datetime import datetime
+
+import asyncpg
+from cryptography.fernet import Fernet
+
+from .config import DeviceConfig
+from .models import PollResult
+
+
+class Store:
+    def __init__(self, pool: asyncpg.Pool) -> None:
+        self._pool = pool
+
+    @classmethod
+    async def connect(cls, database_url: str) -> "Store":
+        return cls(await asyncpg.create_pool(database_url, min_size=1, max_size=5))
+
+    async def close(self) -> None:
+        await self._pool.close()
+
+    async def upsert_nvr(self, name: str, host: str) -> int:
+        row = await self._pool.fetchrow(
+            """
+            INSERT INTO nvr (name, host) VALUES ($1, $2)
+            ON CONFLICT (name) DO UPDATE SET host = EXCLUDED.host
+            RETURNING id
+            """,
+            name,
+            host,
+        )
+        return row["id"]
+
+    async def delete_device_data(self, name: str) -> bool:
+        """Kaldırılan cihazın nvr satırını ve tüm metriklerini siler (hayalet
+        kalmasın). Süpervizör, cihazın döngüleri DURDUKTAN sonra çağırır; böylece
+        son bir poll'un nvr satırını yeniden yaratma yarışı olmaz. True = silindi."""
+        async with self._pool.acquire() as conn, conn.transaction():
+            row = await conn.fetchrow("SELECT id FROM nvr WHERE name=$1", name)
+            if not row:
+                return False
+            nid = row["id"]
+            for tbl in (
+                "event", "nvr_metrics", "disk_metrics", "raid_metrics",
+                "retention_metrics", "camera_state", "disk_smart",
+                "disk_smart_history",
+            ):
+                await conn.execute(f"DELETE FROM {tbl} WHERE nvr_id=$1", nid)
+            await conn.execute("DELETE FROM nvr WHERE id=$1", nid)
+        return True
+
+    async def load_device_configs(self, secret_key: str) -> list[DeviceConfig]:
+        """Panelden (device_config tablosu) eklenen cihazları yükler."""
+        fernet = Fernet(secret_key.encode())
+        rows = await self._pool.fetch("SELECT * FROM device_config WHERE enabled")
+        devices: list[DeviceConfig] = []
+        for r in rows:
+            devices.append(
+                DeviceConfig(
+                    name=r["name"],
+                    host=r["host"],
+                    port=r["port"],
+                    username=r["username"],
+                    password=fernet.decrypt(r["password_enc"].encode()).decode(),
+                    https=r["https"],
+                    verify_tls=r["verify_tls"],
+                    poll_interval_s=r["poll_interval_s"],
+                    reachability_interval_s=r["reachability_interval_s"],
+                    overwrite_recording=r["overwrite_recording"],
+                    event_stream=r["event_stream"],
+                    rpc2=r["rpc2"],
+                    login_watch=bool(r.get("login_watch")),
+                    login_allowlist=list(r.get("login_allowlist") or []),
+                    retention_check=r["retention_check"],
+                    max_channels=r["max_channels"],
+                    first_channel=r["first_channel"],
+                    min_retention_days=r["min_retention_days"],
+                )
+            )
+        return devices
+
+    async def write_event(
+        self, device_name: str, source: str, code: str, severity: str, message: str
+    ) -> None:
+        await self._pool.execute(
+            """
+            INSERT INTO event (nvr_id, source, code, severity, payload)
+            VALUES ((SELECT id FROM nvr WHERE name=$1), $2, $3, $4,
+                    jsonb_build_object('message', $5::text))
+            """,
+            device_name,
+            source,
+            code,
+            severity,
+            message,
+        )
+
+    async def write_disk_smart(self, nvr_id: int, d: dict) -> None:
+        await self._pool.execute(
+            """
+            INSERT INTO disk_smart (nvr_id, disk_name, ts, health, temperature_c,
+                power_on_hours, reallocated, pending, uncorrectable, predict, attrs)
+            VALUES ($1,$2,now(),$3,$4,$5,$6,$7,$8,$9,$10)
+            ON CONFLICT (nvr_id, disk_name) DO UPDATE SET
+                ts=now(), health=$3, temperature_c=$4, power_on_hours=$5,
+                reallocated=$6, pending=$7, uncorrectable=$8, predict=$9, attrs=$10
+            """,
+            nvr_id, d["disk"], d.get("health"), d.get("temperature_c"),
+            d.get("power_on_hours"), d.get("reallocated"), d.get("pending"),
+            d.get("uncorrectable"), bool(d.get("predict")),
+            json.dumps(d.get("attrs") or [], default=str),
+        )
+
+    async def write_disk_smart_history(self, nvr_id: int, d: dict) -> None:
+        """SMART geçmişine EKLER (append-only) — trend/öngörü için zaman serisi.
+        disk_smart anlık değeri tutar; bu tablo eğilimi (reallocated/pending artışı,
+        sıcaklık trendi) çıkarmak için geçmişi biriktirir."""
+        await self._pool.execute(
+            """
+            INSERT INTO disk_smart_history (nvr_id, disk_name, ts, health,
+                temperature_c, power_on_hours, reallocated, pending,
+                uncorrectable, predict)
+            VALUES ($1,$2,now(),$3,$4,$5,$6,$7,$8,$9)
+            """,
+            nvr_id, d["disk"], d.get("health"), d.get("temperature_c"),
+            d.get("power_on_hours"), d.get("reallocated"), d.get("pending"),
+            d.get("uncorrectable"), bool(d.get("predict")),
+        )
+
+    async def write_camera_state(
+        self, nvr_id: int, total: int, online: int, offline: int,
+        offline_list: list,
+    ) -> None:
+        await self._pool.execute(
+            """
+            INSERT INTO camera_state (nvr_id, ts, total, online, offline, offline_list)
+            VALUES ($1, now(), $2, $3, $4, $5)
+            ON CONFLICT (nvr_id) DO UPDATE SET
+                ts=now(), total=$2, online=$3, offline=$4, offline_list=$5
+            """,
+            nvr_id, total, online, offline, json.dumps(offline_list, default=str),
+        )
+
+    async def write_retention(
+        self, nvr_id: int, oldest: datetime | None, retention_days: float | None
+    ) -> None:
+        await self._pool.execute(
+            """
+            INSERT INTO retention_metrics (ts, nvr_id, oldest_recording, retention_days)
+            VALUES (now(), $1, $2, $3)
+            """,
+            nvr_id,
+            oldest,
+            retention_days,
+        )
+
+    async def write_poll(self, nvr_id: int, result: PollResult) -> None:
+        async with self._pool.acquire() as conn, conn.transaction():
+            if result.identity:
+                await conn.execute(
+                    """
+                    UPDATE nvr SET device_type=$2, serial=$3, software_version=$4,
+                                   last_seen = CASE WHEN $5 THEN now() ELSE last_seen END
+                    WHERE id=$1
+                    """,
+                    nvr_id,
+                    result.identity.device_type,
+                    result.identity.serial,
+                    result.identity.software_version,
+                    result.reachable,
+                )
+            await conn.execute(
+                """
+                INSERT INTO nvr_metrics (ts, nvr_id, reachable, latency_ms, error)
+                VALUES (now(), $1, $2, $3, $4)
+                """,
+                nvr_id,
+                result.reachable,
+                result.latency_ms,
+                result.error,
+            )
+            for d in result.disks:
+                await conn.execute(
+                    """
+                    INSERT INTO disk_metrics
+                        (ts, nvr_id, disk_name, state, total_bytes, used_bytes,
+                         is_error, health_ok, temperature_c, raw)
+                    VALUES (now(), $1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    """,
+                    nvr_id,
+                    d.name,
+                    d.state.value,
+                    d.total_bytes,
+                    d.used_bytes,
+                    d.is_error,
+                    d.health_ok,
+                    d.temperature_c,
+                    json.dumps(d.raw, default=str),
+                )
+            for r in result.raids:
+                await conn.execute(
+                    """
+                    INSERT INTO raid_metrics
+                        (ts, nvr_id, raid_name, level, state, rebuild_pct, raw)
+                    VALUES (now(), $1, $2, $3, $4, $5, $6)
+                    """,
+                    nvr_id,
+                    r.name,
+                    r.level,
+                    r.state.value,
+                    r.rebuild_pct,
+                    json.dumps(r.raw, default=str),
+                )

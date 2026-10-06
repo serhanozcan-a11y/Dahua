@@ -1,0 +1,47 @@
+# devices.yaml olarak kopyalayıp doldurun. Parolalar bu dosyaya YAZILMAZ;
+# her cihaz .env içindeki bir ortam değişkenine işaret eder (password_env).
+
+# Alarm bildirimleri. email/telegram bölümlerini silerseniz alarmlar yalnız
+# log + event tablosuna yazılır (uygulama yine sorunsuz çalışır).
+alerting:
+  reminder_hours: 24         # çözülmeyen kritik alarm hatırlatma aralığı
+  email:
+    smtp_host: mail.sirket.local
+    smtp_port: 587
+    starttls: true
+    username: monitor@sirket.com
+    password_env: SMTP_PASSWORD
+    from: monitor@sirket.com
+    to:
+      - bt-ekibi@sirket.com
+  # telegram:
+  #   bot_token_env: TELEGRAM_BOT_TOKEN
+  #   chat_id: "-1001234567890"
+
+defaults:
+  username: monitor          # NVR'da açılmış salt-izleme kullanıcısı
+  https: false
+  verify_tls: false
+  poll_interval_s: 300       # disk/RAID sorgu aralığı
+  reachability_interval_s: 60
+  retention_check: true      # günde bir: cihazdaki en eski kaydın tarihi
+  max_channels: 32           # taranacak kanal sayısı (cihazın kanal sayısı)
+  first_channel: 1           # bazı firmware'ler 0 tabanlı numaralandırır
+  # min_retention_days: 30   # saklama bu değerin altına düşerse uyarı
+
+devices:
+  - name: nvr-merkez-01
+    host: 192.168.10.11
+    password_env: NVR_MERKEZ_01_PASSWORD
+
+  - name: nvr-depo-01
+    host: 192.168.20.11
+    https: true              # yeni firmware, HTTPS zorunlu
+    password_env: NVR_DEPO_01_PASSWORD
+    overwrite_recording: false   # doluluk alarmı bu cihazda aktif
+
+  # Geliştirme: docker compose --profile dev up ile gelen sahte NVR
+  # - name: sim-01
+  #   host: nvr-sim
+  #   port: 8080
+  #   password_env: SIM_PASSWORD
